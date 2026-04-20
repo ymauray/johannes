@@ -4,6 +4,9 @@ on:
   push:
     branches: [ "main" ]
 
+permissions:
+  contents: read
+
 jobs:
   build:
     strategy:
@@ -17,6 +20,9 @@ jobs:
             binary: Johannes.exe
           - rid: osx-x64
             artifact: johannes-osx-x64
+            binary: Johannes
+          - rid: osx-arm64
+            artifact: johannes-osx-arm64
             binary: Johannes
 
     runs-on: ubuntu-latest
