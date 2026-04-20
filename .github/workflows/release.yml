@@ -2,75 +2,158 @@ name: Release
 
 on:
   push:
-    branches: [ "main" ]
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag à simuler (ex: v0.1.1)'
+        required: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
+    name: Build (${{ matrix.rid }})
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
-          - rid: linux-x64
-            artifact: johannes-linux-x64
-            binary: Johannes
-          - rid: win-x64
-            artifact: johannes-win-x64.exe
-            binary: Johannes.exe
-          - rid: osx-x64
-            artifact: johannes-osx-x64
-            binary: Johannes
-          - rid: osx-arm64
-            artifact: johannes-osx-arm64
-            binary: Johannes
-
-    runs-on: ubuntu-latest
+          - os: ubuntu-latest
+            rid: linux-x64
+            archive: johannes-linux-x64.tar.gz
+          - os: windows-latest
+            rid: win-x64
+            archive: johannes-win-x64.zip
+          - os: macos-latest
+            rid: osx-arm64
+            archive: johannes-osx-arm64.tar.gz
 
     steps:
-    - uses: actions/checkout@v6
+      - name: Set release tag
+        run: echo "RELEASE_TAG=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}" >> $GITHUB_ENV
+        shell: bash
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v5
-      with:
-        dotnet-version: 10.0.x
+      - uses: actions/checkout@v6
 
-    - name: Publier le binaire auto-contenu (${{ matrix.rid }})
-      run: dotnet publish Johannes.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o ./publish
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.x'
 
-    - name: Renommer l'artefact
-      run: mv ./publish/${{ matrix.binary }} ${{ matrix.artifact }}
+      - name: Publish
+        run: >
+          dotnet publish Johannes.csproj
+          -c Release
+          -r ${{ matrix.rid }}
+          --self-contained
+          -o out
 
-    - name: Téléverser l'artefact
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.artifact }}
-        path: ${{ matrix.artifact }}
+      - name: Archive (Linux / macOS)
+        if: runner.os != 'Windows'
+        run: tar -czf ${{ matrix.archive }} -C out johannes
+
+      - name: Archive (Windows)
+        if: runner.os == 'Windows'
+        run: Compress-Archive -Path out\johannes.exe -DestinationPath ${{ matrix.archive }}
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.archive }}
+          path: ${{ matrix.archive }}
+
+      - name: Install nfpm
+        if: runner.os == 'Linux'
+        run: |
+          echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' | sudo tee /etc/apt/sources.list.d/goreleaser.list
+          sudo apt-get update -q
+          sudo apt-get install -y nfpm
+
+      - name: Package (.deb / .rpm)
+        if: runner.os == 'Linux'
+        run: |
+          VERSION=${RELEASE_TAG#v} nfpm package --config nfpm.yaml --packager deb --target johannes-linux-x64.deb
+          VERSION=${RELEASE_TAG#v} nfpm package --config nfpm.yaml --packager rpm --target johannes-linux-x64.rpm
+
+      - uses: actions/upload-artifact@v7
+        if: runner.os == 'Linux'
+        with:
+          name: johannes-linux-x64.deb
+          path: johannes-linux-x64.deb
+
+      - uses: actions/upload-artifact@v7
+        if: runner.os == 'Linux'
+        with:
+          name: johannes-linux-x64.rpm
+          path: johannes-linux-x64.rpm
 
   release:
+    name: Create Release
     needs: build
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-
     steps:
-    - uses: actions/checkout@v6
+      - name: Set release tag
+        run: echo "RELEASE_TAG=${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}" >> $GITHUB_ENV
 
-    - name: Télécharger tous les artefacts
-      uses: actions/download-artifact@v4
-      with:
-        path: ./artifacts
-        merge-multiple: true
+      - uses: actions/download-artifact@v8
+        with:
+          merge-multiple: true
+          path: artifacts
 
-    - name: Générer la version
-      id: version
-      run: echo "version=v$(date +'%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          files: artifacts/*
+          generate_release_notes: true
 
-    - name: Créer la release GitHub
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh release create "${{ steps.version.outputs.version }}" \
-          --title "Release ${{ steps.version.outputs.version }}" \
-          --generate-notes \
-          ./artifacts/*
+      - name: Update Homebrew tap
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+        run: |
+          VERSION=${RELEASE_TAG#v}
+          MACOS_SHA=$(curl -sL "https://github.com/ymauray/johannes/releases/download/${RELEASE_TAG}/johannes-osx-arm64.tar.gz" | sha256sum | cut -d' ' -f1)
+          LINUX_SHA=$(curl -sL "https://github.com/ymauray/johannes/releases/download/${RELEASE_TAG}/johannes-linux-x64.tar.gz" | sha256sum | cut -d' ' -f1)
+
+          git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/ymauray/homebrew-tap.git" tap
+          cd tap
+
+          VERSION=$VERSION MACOS_SHA=$MACOS_SHA LINUX_SHA=$LINUX_SHA python3 << 'PYEOF'
+          import re, os
+          content = open('Formula/johannes.rb').read()
+          content = re.sub(r'version "[^"]*"', f'version "{os.environ["VERSION"]}"', content)
+          shas = iter([os.environ['MACOS_SHA'], os.environ['LINUX_SHA']])
+          content = re.sub(r'sha256 "[a-f0-9]*"', lambda m: f'sha256 "{next(shas)}"', content)
+          open('Formula/johannes.rb', 'w').write(content)
+          PYEOF
+
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add Formula/johannes.rb
+          git diff --staged --quiet || git commit -m "bump johannes to ${VERSION}"
+          git push
+
+      - name: Update Scoop bucket
+        env:
+          SCOOP_BUCKET_TOKEN: ${{ secrets.SCOOP_BUCKET_TOKEN }}
+        run: |
+          VERSION=${RELEASE_TAG#v}
+          WIN_SHA=$(curl -sL "https://github.com/ymauray/johannes/releases/download/${RELEASE_TAG}/johannes-win-x64.zip" | sha256sum | cut -d' ' -f1)
+
+          git clone "https://x-access-token:${SCOOP_BUCKET_TOKEN}@github.com/ymauray/scoop-bucket.git" scoop
+          cd scoop
+
+          VERSION=$VERSION WIN_SHA=$WIN_SHA python3 -c "
+          import json, os
+          v = os.environ['VERSION']
+          m = json.load(open('johannes.json'))
+          m['version'] = v
+          m['architecture']['64bit']['url'] = 'https://github.com/ymauray/johannes/releases/download/v' + v + '/johannes-win-x64.zip'
+          m['architecture']['64bit']['hash'] = 'sha256:' + os.environ['WIN_SHA']
+          open('johannes.json', 'w').write(json.dumps(m, indent=4) + '\n')
+          "
+
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          git add johannes.json
+          git diff --staged --quiet || git commit -m "bump johannes to ${VERSION}"
+          git push
