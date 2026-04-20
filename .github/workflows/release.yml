@@ -1,0 +1,76 @@
+name: Release
+
+on:
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - rid: linux-x64
+            artifact: johannes-linux-x64
+            binary: Johannes
+          - rid: win-x64
+            artifact: johannes-win-x64.exe
+            binary: Johannes.exe
+          - rid: osx-x64
+            artifact: johannes-osx-x64
+            binary: Johannes
+          - rid: osx-arm64
+            artifact: johannes-osx-arm64
+            binary: Johannes
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Publier le binaire auto-contenu (${{ matrix.rid }})
+      run: dotnet publish Johannes.csproj -c Release -r ${{ matrix.rid }} --self-contained true -p:PublishSingleFile=true -o ./publish
+
+    - name: Renommer l'artefact
+      run: mv ./publish/${{ matrix.binary }} ${{ matrix.artifact }}
+
+    - name: Téléverser l'artefact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact }}
+        path: ${{ matrix.artifact }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Télécharger tous les artefacts
+      uses: actions/download-artifact@v4
+      with:
+        path: ./artifacts
+        merge-multiple: true
+
+    - name: Générer la version
+      id: version
+      run: echo "version=v$(date +'%Y.%m.%d')-${{ github.run_number }}" >> $GITHUB_OUTPUT
+
+    - name: Créer la release GitHub
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release create "${{ steps.version.outputs.version }}" \
+          --title "Release ${{ steps.version.outputs.version }}" \
+          --generate-notes \
+          ./artifacts/*
