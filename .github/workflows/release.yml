@@ -43,7 +43,7 @@ jobs:
 
       - name: Publish
         run: >
-          dotnet publish Johannes.csproj
+          dotnet publish johannes.csproj
           -c Release
           -r ${{ matrix.rid }}
           --self-contained
