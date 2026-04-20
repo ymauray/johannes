@@ -49,6 +49,17 @@ Utilisez l'option `--docx` ou `-d` :
 dotnet run -- --docx "MonDocument.docx"
 ```
 
+## Tests
+
+Pour lancer les tests unitaires :
+
+```bash
+dotnet test
+```
+
+Le projet utilise **xUnit** pour valider la logique de transformation du texte (italique, ponctuation française, tirets cadratins, etc.). Une intégration continue (CI) est configurée via GitHub Actions.
+
+
 ## Structure de sortie
 
 Le programme génère un fichier `.typ` pour chaque document traité. Il ajoute automatiquement un import au début du fichier :
