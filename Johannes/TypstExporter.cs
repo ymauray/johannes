@@ -1,4 +1,4 @@
-﻿using DocumentFormat.OpenXml.Bibliography;
+using DocumentFormat.OpenXml.Bibliography;
 using DocumentFormat.OpenXml.ExtendedProperties;
 using System.Text.RegularExpressions;
 
@@ -38,7 +38,7 @@ namespace Johannes
 					break;
 				case "Ellipse":
 				case "Elipse":
-					Write("#ellipsis()");
+					Write("#ellipsis()\n\n");
 					break;
 				case "Titre":
 					Write($"#titre()[\n{content}\n]\n\n");
