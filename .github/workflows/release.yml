@@ -47,6 +47,7 @@ jobs:
           -c Release
           -r ${{ matrix.rid }}
           --self-contained
+          -p:PublishSingleFile=true
           -o out
 
       - name: Archive (Linux / macOS)
