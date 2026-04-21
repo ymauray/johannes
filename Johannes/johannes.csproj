@@ -8,9 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Johannes.Tests\**" />
-    <EmbeddedResource Remove="Johannes.Tests\**" />
-    <None Remove="Johannes.Tests\**" />
+    <Compile Remove="..\Johannes.Tests\**" />
+    <EmbeddedResource Remove="..\Johannes.Tests\**" />
+    <None Remove="..\Johannes.Tests\**" />
   </ItemGroup>
 
   <ItemGroup>
