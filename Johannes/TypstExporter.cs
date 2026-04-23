@@ -20,16 +20,14 @@ namespace Johannes
 			Write("#import \"/support-functions.typ\" : *\n\n");
 		}
 
-		private void Write(string data)
-		{
-			_handle.Write(System.Text.Encoding.UTF8.GetBytes(data));
-		}
+		private void Write(string data) => _handle.Write(System.Text.Encoding.UTF8.GetBytes(data));
 
 		public void Paragraph(string styleId, List<ParagraphRun> runs)
 		{
 			var content = UnRun(runs);
 
-			switch (styleId) {
+			switch (styleId)
+			{
 				case "Titre1":
 					Write($"= {content}\n\n");
 					break;
@@ -60,14 +58,14 @@ namespace Johannes
 					var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
 					content += Replace(c, bytes);
 				}
-				
+
 				if (run.isItalic)
 				{
 					content = $"_{content}_";
 				}
 				sb.Append(content);
 			}
-			
+
 			var data = sb.ToString();
 			data = QuestionMarkRegex().Replace(data, "~?");
 			data = ExclamationMarkRegex().Replace(data, "~!");
@@ -79,17 +77,14 @@ namespace Johannes
 			return data;
 		}
 
-		public static string Replace(char c, byte[] bytes)
+		public static string Replace(char c, byte[] bytes) => bytes switch
 		{
-			return bytes switch
-			{
-				// em dash
-				[0xE2, 0x80, 0x94] => "---",
-				// non-breaking space
-				[0xC2, 0xA0] => "~",
-				_ => $"{c}",
-			};
-		}
+			// em dash
+			[0xE2, 0x80, 0x94] => "---",
+			// non-breaking space
+			[0xC2, 0xA0] => "~",
+			_ => $"{c}",
+		};
 
 		public void FinishExport()
 		{
