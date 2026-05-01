@@ -1,10 +1,8 @@
-using DocumentFormat.OpenXml.Bibliography;
-using DocumentFormat.OpenXml.ExtendedProperties;
 using System.Text.RegularExpressions;
 
 namespace Johannes
 {
-	public partial class TypstExporter : IExporter
+	public class TypstExporter : AbstractExporter
 	{
 		private readonly FileStream _handle;
 
@@ -20,16 +18,14 @@ namespace Johannes
 			Write("#import \"/support-functions.typ\" : *\n\n");
 		}
 
-		private void Write(string data)
-		{
-			_handle.Write(System.Text.Encoding.UTF8.GetBytes(data));
-		}
+		protected void Write(string data) => _handle.Write(System.Text.Encoding.UTF8.GetBytes(data));
 
-		public void Paragraph(string styleId, List<ParagraphRun> runs)
+		public override void Paragraph(string styleId, List<ParagraphRun> runs)
 		{
 			var content = UnRun(runs);
 
-			switch (styleId) {
+			switch (styleId)
+			{
 				case "Titre1":
 					Write($"= {content}\n\n");
 					break;
@@ -60,50 +56,38 @@ namespace Johannes
 					var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
 					content += Replace(c, bytes);
 				}
-				
+
 				if (run.isItalic)
 				{
 					content = $"_{content}_";
 				}
 				sb.Append(content);
 			}
-			
+
 			var data = sb.ToString();
-			data = QuestionMarkRegex().Replace(data, "~?");
-			data = ExclamationMarkRegex().Replace(data, "~!");
+			data = SpaceBeforeQuestionMarkRegex().Replace(data, "~?");
+			data = SpaceAfterQuestionMarkRegex().Replace(data, "?~");
+			data = SpaceBeforeExclamationMarkRegex().Replace(data, "~!");
+			data = SpaceAfterExclamationMarkRegex().Replace(data, "!~");
 			data = ColonRegex().Replace(data, "~:");
 			data = SemiColonRegex().Replace(data, "~;");
-
-			// Replace " ?" with "~?" to prevent line breaks between a word and its following question mark.
 
 			return data;
 		}
 
-		public static string Replace(char c, byte[] bytes)
+		public static string Replace(char c, byte[] bytes) => bytes switch
 		{
-			return bytes switch
-			{
-				// em dash
-				[0xE2, 0x80, 0x94] => "---",
-				// non-breaking space
-				[0xC2, 0xA0] => "~",
-				_ => $"{c}",
-			};
-		}
+			// em dash
+			[0xE2, 0x80, 0x94] => "---",
+			// non-breaking space
+			[0xC2, 0xA0] => "~",
+			_ => $"{c}",
+		};
 
-		public void FinishExport()
+		public override void FinishExport()
 		{
 			_handle.Flush();
 			_handle.Close();
 		}
-
-		[GeneratedRegex(@"[ \u00A0~]\?")]
-		private static partial Regex QuestionMarkRegex();
-		[GeneratedRegex(@"[ \u00A0~]\!")]
-		private static partial Regex ExclamationMarkRegex();
-		[GeneratedRegex(@"[ \u00A0~]:")]
-		private static partial Regex ColonRegex();
-		[GeneratedRegex(@"[ \u00A0~];")]
-		private static partial Regex SemiColonRegex();
 	}
 }
