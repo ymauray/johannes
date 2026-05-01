@@ -35,8 +35,12 @@ if (docxFiles.Count == 0)
 foreach (string docxFile in docxFiles)
 {
 	Console.WriteLine($"Processing: {docxFile}");
+	var documentParser = new DocumentParser(docxFile);
+
 	var baseFile = Path.GetFileNameWithoutExtension(docxFile);
 	var typstExporter = new TypstExporter(baseFile);
-	var documentParser = new DocumentParser(docxFile);
+	var paigeExporter = new PaigeExporter(baseFile);
+
 	documentParser.ParseAndExport(typstExporter);
+	documentParser.ParseAndExport(paigeExporter);
 }
