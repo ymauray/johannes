@@ -4,7 +4,8 @@ namespace Johannes
 {
 	public partial class PaigeExporter : AbstractExporter
 	{
-		private readonly FileStream _handle;
+		private readonly Stream _handle;
+		private readonly bool _leaveOpen;
 
 		private bool chapterNeedsToBeClosed = false;
 
@@ -17,6 +18,13 @@ namespace Johannes
 				File.Delete(filename);
 			}
 			_handle = File.OpenWrite(filename);
+			_leaveOpen = false;
+		}
+
+		public PaigeExporter(Stream stream)
+		{
+			_handle = stream;
+			_leaveOpen = true;
 		}
 
 		protected void Write(string data) => _handle.Write(System.Text.Encoding.UTF8.GetBytes(data));
@@ -158,7 +166,10 @@ namespace Johannes
 			}
 
 			_handle.Flush();
-			_handle.Close();
+			if (!_leaveOpen)
+			{
+				_handle.Close();
+			}
 		}
 
 		[GeneratedRegex(@"\s+")]
