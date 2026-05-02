@@ -12,7 +12,7 @@ namespace Johannes
 		public PaigeExporter(string baseFile)
 		{
 			var filename = $"{baseFile}.paige";
-			// delete file if it already exists to avoid appending to an old file
+			// Supprime le fichier s'il existe déjà pour éviter d'ajouter à un ancien fichier
 			if (File.Exists(filename))
 			{
 				File.Delete(filename);
@@ -45,7 +45,8 @@ namespace Johannes
 
 						""");
 					}
-					// Sanitize content to be used as an ID by replacing spaces with underscores and removing non-alphanumeric characters
+					// Nettoie le contenu pour être utilisé comme ID en remplaçant les espaces par des underscores 
+					// et en supprimant les caractères non-alphanumériques
 					var id = SpacesRegex().Replace(content, "_");
 					id = NonWordRegex().Replace(id, "");
 					id = id.ToLowerInvariant();
@@ -109,7 +110,7 @@ namespace Johannes
 					""");
 					break;
 				default:
-					throw new NotSupportedException($"Unsupported style ID: {styleId}");
+					throw new NotSupportedException($"Style non supporté : {styleId}");
 			}
 		}
 
@@ -146,9 +147,9 @@ namespace Johannes
 
 		private static string Replace(char c, byte[] bytes) => bytes switch
 		{
-			// em dash
+			// tiret cadratin
 			[0xE2, 0x80, 0x94] => "&#x2014;",
-			// non-breaking space
+			// espace insécable
 			[0xC2, 0xA0] => "&#160;",
 			_ => $"{c}",
 		};

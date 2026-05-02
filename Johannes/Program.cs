@@ -1,13 +1,13 @@
 using System.CommandLine;
 using Johannes;
 
-Option<FileInfo?> docxOption = new("--docx", "-d") { Description = "Path to a .docx file to process." };
-Option<bool> withoutTypstOption = new("--without-typst") { Description = "Do not export to Typst format." };
-Option<bool> withoutPaigeOption = new("--without-paige") { Description = "Do not export to Paige format." };
-Option<bool> typstOnlyOption = new("--typst") { Description = "Export ONLY to Typst format. No other options allowed." };
-Option<bool> paigeOnlyOption = new("--paige") { Description = "Export ONLY to Paige format. No other options allowed." };
+Option<FileInfo?> docxOption = new("--docx", "-d") { Description = "Chemin vers un fichier .docx à traiter." };
+Option<bool> withoutTypstOption = new("--without-typst") { Description = "Ne pas exporter au format Typst." };
+Option<bool> withoutPaigeOption = new("--without-paige") { Description = "Ne pas exporter au format Paige." };
+Option<bool> typstOnlyOption = new("--typst") { Description = "Exporter UNIQUEMENT au format Typst. Aucune autre option autorisée (sauf --docx)." };
+Option<bool> paigeOnlyOption = new("--paige") { Description = "Exporter UNIQUEMENT au format Paige. Aucune autre option autorisée (sauf --docx)." };
 
-var rootCommand = new RootCommand("johannes — converts .docx files to Typst and Paige formats.")
+var rootCommand = new RootCommand("johannes — convertit des fichiers .docx vers les formats Typst et Paige.")
 {
 	docxOption,
 	withoutTypstOption,
@@ -25,19 +25,19 @@ if (typstOnly || paigeOnly)
 {
 	if (typstOnly && paigeOnly)
 	{
-		Console.WriteLine("Error: Options --typst and --paige are mutually exclusive.");
+		Console.WriteLine("Erreur : Les options --typst et --paige sont mutuellement exclusives.");
 		return;
 	}
 
-	// Check if any forbidden option was provided. 
-	// --docx is allowed, but --without-typst and --without-paige are not.
+	// Vérifie si une option interdite a été fournie.
+	// --docx est autorisé, mais --without-typst et --without-paige ne le sont pas.
 	var forbiddenOptions = parseResult.RootCommandResult.Children
 		.OfType<System.CommandLine.Parsing.OptionResult>()
 		.Where(o => o.Option.Name != "docx" && o.Option.Name != "typst" && o.Option.Name != "paige");
 
 	if (forbiddenOptions.Any())
 	{
-		Console.WriteLine($"Error: When using {(typstOnly ? "--typst" : "--paige")}, you cannot use --without-typst or --without-paige.");
+		Console.WriteLine($"Erreur : Lors de l'utilisation de {(typstOnly ? "--typst" : "--paige")}, vous ne pouvez pas utiliser --without-typst ou --without-paige.");
 		return;
 	}
 }
@@ -74,26 +74,26 @@ else
 }
 if (docxFiles.Count == 0)
 {
-	Console.WriteLine("No .docx files found in the current directory.");
+	Console.WriteLine("Aucun fichier .docx trouvé dans le répertoire courant.");
 	return;
 }
 
 foreach (string docxFile in docxFiles)
 {
-	Console.WriteLine($"Processing: {docxFile}");
+	Console.WriteLine($"Traitement de : {docxFile}");
 	var documentParser = new DocumentParser(docxFile);
 	var baseFile = Path.GetFileNameWithoutExtension(docxFile);
 
 	if (!withoutTypst)
 	{
-		Console.WriteLine(" - Exporting to Typst...");
+		Console.WriteLine(" - Export vers Typst...");
 		var typstExporter = new TypstExporter(baseFile);
 		documentParser.ParseAndExport(typstExporter);
 	}
 
 	if (!withoutPaige)
 	{
-		Console.WriteLine(" - Exporting to Paige...");
+		Console.WriteLine(" - Export vers Paige...");
 		var paigeExporter = new PaigeExporter(baseFile);
 		documentParser.ParseAndExport(paigeExporter);
 	}
