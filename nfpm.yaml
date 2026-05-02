@@ -3,7 +3,7 @@ arch: amd64
 platform: linux
 version: ${VERSION}
 maintainer: Yannick Mauray
-description: Convertisseur de fichiers .docx vers le format Typst écrit en .NET 10
+description: Convertisseur de fichiers .docx vers les formats Typst et Paige écrit en .NET 10
 homepage: https://github.com/ymauray/johannes
 license: MIT
 

@@ -18,5 +18,5 @@ Ce document définit les règles de développement et d'interaction pour le proj
 
 ## 4. Standards Techniques
 - **C# / .NET 10** : Utilisation des fonctionnalités modernes du langage.
-- **Indentation** : Tabulations pour le C#, espaces pour le Markdown/YAML/Typst (configuré via `.editorconfig`).
+- **Indentation** : Tabulations pour le C#, espaces pour le Markdown/YAML/Typst/Paige (configuré via `.editorconfig`).
 - **Typographie** : Respect scrupuleux des règles typographiques françaises lors de l'export (espaces insécables, etc.).
