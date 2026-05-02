@@ -85,7 +85,6 @@ Le projet est conçu de manière modulaire :
 - `IExporter` : Interface pour définir différents formats de sortie.
 - `TypstExporter` : Implémentation concrète pour le format Typst.
 - `PaigeExporter` : Implémentation concrète pour le format Paige.
-- `EpubExporter` : (En cours de développement) Export direct vers EPUB.
 
 ## Licence
 
