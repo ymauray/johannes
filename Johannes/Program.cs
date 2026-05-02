@@ -4,18 +4,58 @@ using Johannes;
 Option<FileInfo?> docxOption = new("--docx", "-d") { Description = "Path to a .docx file to process." };
 Option<bool> withoutTypstOption = new("--without-typst") { Description = "Do not export to Typst format." };
 Option<bool> withoutPaigeOption = new("--without-paige") { Description = "Do not export to Paige format." };
+Option<bool> typstOnlyOption = new("--typst") { Description = "Export ONLY to Typst format. No other options allowed." };
+Option<bool> paigeOnlyOption = new("--paige") { Description = "Export ONLY to Paige format. No other options allowed." };
 
 var rootCommand = new RootCommand("johannes — converts .docx files to Typst and Paige formats.")
 {
 	docxOption,
 	withoutTypstOption,
-	withoutPaigeOption
+	withoutPaigeOption,
+	typstOnlyOption,
+	paigeOnlyOption
 };
 
 ParseResult parseResult = rootCommand.Parse(args);
+
+bool typstOnly = parseResult.GetValue<bool>(typstOnlyOption);
+bool paigeOnly = parseResult.GetValue<bool>(paigeOnlyOption);
+
+if (typstOnly || paigeOnly)
+{
+	if (typstOnly && paigeOnly)
+	{
+		Console.WriteLine("Error: Options --typst and --paige are mutually exclusive.");
+		return;
+	}
+
+	// Check if any forbidden option was provided. 
+	// --docx is allowed, but --without-typst and --without-paige are not.
+	var forbiddenOptions = parseResult.RootCommandResult.Children
+		.OfType<System.CommandLine.Parsing.OptionResult>()
+		.Where(o => o.Option.Name != "docx" && o.Option.Name != "typst" && o.Option.Name != "paige");
+
+	if (forbiddenOptions.Any())
+	{
+		Console.WriteLine($"Error: When using {(typstOnly ? "--typst" : "--paige")}, you cannot use --without-typst or --without-paige.");
+		return;
+	}
+}
+
 FileInfo? fileInfo = parseResult.GetValue<FileInfo?>("--docx");
 bool withoutTypst = parseResult.GetValue<bool>(withoutTypstOption);
 bool withoutPaige = parseResult.GetValue<bool>(withoutPaigeOption);
+
+if (typstOnly)
+{
+	withoutTypst = false;
+	withoutPaige = true;
+}
+else if (paigeOnly)
+{
+	withoutTypst = true;
+	withoutPaige = false;
+}
 
 List<string> docxFiles = [];
 
