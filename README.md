@@ -44,6 +44,16 @@ dotnet run
 
 Par défaut, Johannes générera des fichiers `.typ` et `.paige` pour chaque document Word trouvé.
 
+### Désactiver un format d'exportation
+
+Par défaut, Johannes génère les deux formats. Vous pouvez en désactiver un avec :
+
+```bash
+dotnet run -- --without-typst
+# ou
+dotnet run -- --without-paige
+```
+
 ### Convertir un fichier spécifique
 
 Utilisez l'option `--docx` ou `-d` :

@@ -2,14 +2,20 @@ using System.CommandLine;
 using Johannes;
 
 Option<FileInfo?> docxOption = new("--docx", "-d") { Description = "Path to a .docx file to process." };
+Option<bool> withoutTypstOption = new("--without-typst") { Description = "Do not export to Typst format." };
+Option<bool> withoutPaigeOption = new("--without-paige") { Description = "Do not export to Paige format." };
 
 var rootCommand = new RootCommand("johannes — converts .docx files to Typst and Paige formats.")
 {
-	docxOption
+	docxOption,
+	withoutTypstOption,
+	withoutPaigeOption
 };
 
 ParseResult parseResult = rootCommand.Parse(args);
 FileInfo? fileInfo = parseResult.GetValue<FileInfo?>("--docx");
+bool withoutTypst = parseResult.GetValue<bool>(withoutTypstOption);
+bool withoutPaige = parseResult.GetValue<bool>(withoutPaigeOption);
 
 List<string> docxFiles = [];
 
@@ -36,11 +42,19 @@ foreach (string docxFile in docxFiles)
 {
 	Console.WriteLine($"Processing: {docxFile}");
 	var documentParser = new DocumentParser(docxFile);
-
 	var baseFile = Path.GetFileNameWithoutExtension(docxFile);
-	var typstExporter = new TypstExporter(baseFile);
-	var paigeExporter = new PaigeExporter(baseFile);
 
-	documentParser.ParseAndExport(typstExporter);
-	documentParser.ParseAndExport(paigeExporter);
+	if (!withoutTypst)
+	{
+		Console.WriteLine(" - Exporting to Typst...");
+		var typstExporter = new TypstExporter(baseFile);
+		documentParser.ParseAndExport(typstExporter);
+	}
+
+	if (!withoutPaige)
+	{
+		Console.WriteLine(" - Exporting to Paige...");
+		var paigeExporter = new PaigeExporter(baseFile);
+		documentParser.ParseAndExport(paigeExporter);
+	}
 }
