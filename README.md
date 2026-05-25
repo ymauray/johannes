@@ -105,7 +105,7 @@ Le format Paige est un DSL (Domain Specific Language) qui permet de générer de
 ## Architecture
 
 Le projet est conçu de manière modulaire :
-- `DocumentParser` : Analyse la structure OpenXML du fichier Word.
+- `DocumentParser` : Analyse la structure OpenXML du fichier Word. En cas d'erreur de conversion ou d'élément non supporté (par exemple une propriété de run ou un élément inline inconnu), il génère une exception détaillée incluant le style et le texte brut du paragraphe concerné pour faciliter le diagnostic.
 - `IExporter` : Interface pour définir différents formats de sortie.
 - `TypstExporter` : Implémentation concrète pour le format Typst.
 - `PaigeExporter` : Implémentation concrète pour le format Paige.

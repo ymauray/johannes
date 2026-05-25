@@ -1,4 +1,4 @@
-﻿using DocumentFormat.OpenXml.Packaging;
+using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
 using System.Text;
 using W = DocumentFormat.OpenXml.Wordprocessing;
@@ -13,6 +13,11 @@ namespace Johannes
 	public class DocumentParser(string docxFilePath)
 	{
 		private IExporter? _exporter;
+
+		internal DocumentParser(IExporter exporter) : this("")
+		{
+			_exporter = exporter;
+		}
 
 		public void ParseAndExport(IExporter exporter)
 		{
@@ -40,7 +45,7 @@ namespace Johannes
 			_exporter.FinishExport();
 		}
 
-		private void ParseParagraph(W.Paragraph paragraph)
+		internal void ParseParagraph(W.Paragraph paragraph)
 		{
 			var props = paragraph.ParagraphProperties;
 
@@ -50,26 +55,35 @@ namespace Johannes
 
 			foreach (var child in paragraph.ChildElements)
 			{
-				switch (child)
+				try
 				{
-					case W.Run r:
-						var content = ParseRun(r);
-						contentBuilder.Add(content);
-						break;
-					case W.ParagraphProperties:
-						// Silently ignore paragraph properties here.
-						break;
-					case W.BookmarkStart:
-						// Silently ignore bookmarks here.
-						break;
-					case W.BookmarkEnd:
-						// Silently ignore bookmarks here.
-						break;
-					case ProofError:
-						// Silently ignore proof errors here.
-						break;
-					default:
-						throw new NotSupportedException($"Unsupported inline element: {child.GetType().Name}");
+					switch (child)
+					{
+						case W.Run r:
+							var content = ParseRun(r);
+							contentBuilder.Add(content);
+							break;
+						case W.ParagraphProperties:
+							// Silently ignore paragraph properties here.
+							break;
+						case W.BookmarkStart:
+							// Silently ignore bookmarks here.
+							break;
+						case W.BookmarkEnd:
+							// Silently ignore bookmarks here.
+							break;
+						case ProofError:
+							// Silently ignore proof errors here.
+							break;
+						default:
+							throw new NotSupportedException($"Unsupported inline element: {child.GetType().Name}");
+					}
+				}
+				catch (Exception ex)
+				{
+					throw new InvalidOperationException(
+						$"Erreur lors de l'analyse du paragraphe (style: '{styleId}', texte brut: \"{paragraph.InnerText}\") : {ex.Message}",
+						ex);
 				}
 			}
 
