@@ -82,8 +82,8 @@ public class TypstExporterTests
 				  align(center, text("***"))
 				}
 
-				""".ReplaceLineEndings(Environment.NewLine),
-				File.ReadAllText(supportFunctionsFile));
+				""".ReplaceLineEndings("\n"),
+				File.ReadAllText(supportFunctionsFile).ReplaceLineEndings("\n"));
 		}
 		finally
 		{
@@ -148,8 +148,8 @@ public class TypstExporterTests
 				#let style_Messagedroit(body) = {
 				  [#body]
 				}
-				""".ReplaceLineEndings(Environment.NewLine),
-				File.ReadAllText(supportFunctionsFile));
+				""".ReplaceLineEndings("\n"),
+				File.ReadAllText(supportFunctionsFile).ReplaceLineEndings("\n"));
 		}
 		finally
 		{
