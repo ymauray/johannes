@@ -110,7 +110,11 @@ namespace Johannes
 					""");
 					break;
 				default:
-					throw new NotSupportedException($"Style non supporté : {styleId}");
+					Write($"""
+						<p class="style_{styleId}">{content}</p>
+					
+					""");
+					break;
 			}
 		}
 

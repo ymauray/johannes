@@ -135,4 +135,20 @@ public class PaigeExporterTests
 		Assert.Contains("id: \"c2\"", output);
 		Assert.Contains("id: \"c3\"", output);
 	}
+
+	[Fact]
+	public void Paragraph_WithUnsupportedStyle_ShouldExportParagraphWithStyleClass()
+	{
+		// Arrange
+		using var ms = new MemoryStream();
+		var exporter = new PaigeExporter(ms);
+
+		// Act
+		exporter.Paragraph("Messagedroit", [new ParagraphRun { content = "Contenu", isItalic = false }]);
+		exporter.FinishExport();
+
+		// Assert
+		var output = System.Text.Encoding.UTF8.GetString(ms.ToArray()).Replace("\r\n", "\n");
+		Assert.Contains("<p class=\"style_Messagedroit\">Contenu</p>", output);
+	}
 }
