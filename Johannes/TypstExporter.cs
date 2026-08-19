@@ -21,6 +21,13 @@ namespace Johannes
 				#let ellipsis() = {
 				  align(center, text("***"))
 				}
+				"""),
+			new(
+				"titre",
+				"""
+				#let titre(body) = {
+				  body
+				}
 				""")
 		];
 

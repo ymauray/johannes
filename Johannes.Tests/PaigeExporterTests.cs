@@ -151,4 +151,20 @@ public class PaigeExporterTests
 		var output = System.Text.Encoding.UTF8.GetString(ms.ToArray()).Replace("\r\n", "\n");
 		Assert.Contains("<p class=\"style_Messagedroit\">Contenu</p>", output);
 	}
+
+	[Fact]
+	public void Paragraph_WithTitreStyle_ShouldExportParagraphWithTitreStyleClass()
+	{
+		// Arrange
+		using var ms = new MemoryStream();
+		var exporter = new PaigeExporter(ms);
+
+		// Act
+		exporter.Paragraph("Titre", [new ParagraphRun { content = "Titre", isItalic = false }]);
+		exporter.FinishExport();
+
+		// Assert
+		var output = System.Text.Encoding.UTF8.GetString(ms.ToArray()).Replace("\r\n", "\n");
+		Assert.Contains("<p class=\"style_Titre\">Titre</p>", output);
+	}
 }

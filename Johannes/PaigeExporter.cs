@@ -105,7 +105,7 @@ namespace Johannes
 					break;
 				case "Titre":
 					Write($"""
-						<h1 class="mid-title">{content}</h1>
+						<p class="style_Titre">{content}</p>
 					
 					""");
 					break;

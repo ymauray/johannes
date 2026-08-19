@@ -9,9 +9,10 @@ Le nom du projet est un hommage à Johannes Gutenberg, l'inventeur de l'imprimer
 - **Conversion multi-format** : Convertit un fichier `.docx` vers les formats `.typ` (Typst) et `.paige` (Paige).
 - **Support des styles Word** :
   - `Titre 1` -> Titre de niveau 1 Typst (`= ...`) ou nouveau chapitre Paige.
-  - `Titre` -> Appel à une fonction personnalisée `#titre()` (Typst) ou titre centré (Paige).
+  - `Titre` -> Appel à la fonction `#titre()` (Typst) ou paragraphe de classe `style_Titre` (Paige).
   - `Normal` -> Texte brut.
   - `Ellipse` -> Appel à une fonction `#ellipsis()` (Typst) ou séparateur visuel (Paige).
+  - Autres styles -> Appel à une fonction `#style_<StyleId>()` (Typst) ou paragraphe de classe `style_<StyleId>` (Paige).
 - **Formatage** : Support de l'italique.
 - **Typographie française** : Gestion automatique des espaces insécables avant la ponctuation double (`?`, `!`, `:`, `;`).
 - **Nettoyage** : Conversion des tirets cadratins et espaces insécables Word vers la syntaxe appropriée pour chaque format.
@@ -90,11 +91,11 @@ Le programme ajoute automatiquement un import au début du fichier :
 #import "/support-functions.typ" : *
 ```
 
-Assurez-vous d'avoir un fichier `support-functions.typ` disponible dans votre projet Typst pour définir les fonctions `#titre()` et `#ellipsis()`.
+Le fichier `support-functions.typ` est créé automatiquement s'il est absent. Johannes y ajoute les implémentations par défaut de `#ellipsis()` et `#titre()`, ainsi que celles des fonctions requises par les styles Word personnalisés. Chaque fonction ajoutée est signalée par un commentaire et les définitions existantes sont préservées afin de pouvoir les personnaliser.
 
 ### Paige (.paige)
 
-Le format Paige est un DSL (Domain Specific Language) qui permet de générer des fichiers EPUB. Johannes génère automatiquement le manifeste et la structure des chapitres à partir des styles Word.
+Le format Paige est un DSL (Domain Specific Language) qui permet de générer des fichiers EPUB. Johannes génère automatiquement le manifeste et la structure des chapitres à partir des styles Word. Les styles Word personnalisés sont exportés comme classes CSS `style_<StyleId>` ; ils restent sans effet tant qu'aucune règle CSS correspondante n'est définie.
 
 ## Architecture
 

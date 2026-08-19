@@ -56,7 +56,7 @@ public class TypstExporterTests
 	}
 
 	[Fact]
-	public void Constructor_ShouldCreateSupportFunctionsFileWithEllipsisWhenMissing()
+	public void Constructor_ShouldCreateSupportFunctionsFileWithDefaultFunctionsWhenMissing()
 	{
 		// Arrange
 		var directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
@@ -80,6 +80,13 @@ public class TypstExporterTests
 				 */
 				#let ellipsis() = {
 				  align(center, text("***"))
+				}
+				/*
+				 * Fonction insérée automatiquement.
+				 * Les modifications seront conservées.
+				 */
+				#let titre(body) = {
+				  body
 				}
 
 				""".ReplaceLineEndings("\n"),
@@ -109,7 +116,9 @@ public class TypstExporterTests
 			exporter.FinishExport();
 
 			// Assert
-			Assert.Equal(customDefinition, File.ReadAllText(supportFunctionsFile));
+			var supportFunctions = File.ReadAllText(supportFunctionsFile);
+			Assert.StartsWith(customDefinition, supportFunctions);
+			Assert.Contains("#let titre(body) = {", supportFunctions);
 		}
 		finally
 		{
