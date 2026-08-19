@@ -6,7 +6,7 @@ Le nom du projet est un hommage à Johannes Gutenberg, l'inventeur de l'imprimer
 
 ## Fonctionnalités
 
-- **Conversion multi-format** : Scanne le répertoire courant pour trouver des fichiers `.docx` et les convertir simultanément en `.typ` (Typst) et `.paige` (Paige).
+- **Conversion multi-format** : Convertit un fichier `.docx` vers les formats `.typ` (Typst) et `.paige` (Paige).
 - **Support des styles Word** :
   - `Titre 1` -> Titre de niveau 1 Typst (`= ...`) ou nouveau chapitre Paige.
   - `Titre` -> Appel à une fonction personnalisée `#titre()` (Typst) ou titre centré (Paige).
@@ -34,46 +34,36 @@ dotnet build
 
 ## Utilisation
 
-### Convertir tous les fichiers du dossier courant
-
-Lancez simplement l'exécutable sans arguments :
-
-```bash
-dotnet run
-```
-
-Par défaut, Johannes générera des fichiers `.typ` et `.paige` pour chaque document Word trouvé.
-
 ### Modes d'exportation exclusifs
 
-Si vous souhaitez forcer un format unique pour tous les fichiers du répertoire courant sans aucune autre configuration :
+Si vous souhaitez forcer un format unique :
 
 ```bash
-dotnet run -- --typst
+dotnet run -- --docx "MonDocument.docx" --typst
 # ou
-dotnet run -- --paige
+dotnet run -- --docx "MonDocument.docx" --paige
 ```
 
-*Note : Ces options sont mutuellement exclusives. Elles autorisent l'utilisation de `--docx`, mais interdisent les options `--without-*`.*
+*Note : Ces options sont mutuellement exclusives et interdisent les options `--without-*`.*
 
 ### Désactiver un format d'exportation
 
 Par défaut, Johannes génère les deux formats. Vous pouvez en désactiver un avec :
 
 ```bash
-dotnet run -- --without-typst
+dotnet run -- --docx "MonDocument.docx" --without-typst
 # ou
-dotnet run -- --without-paige
+dotnet run -- --docx "MonDocument.docx" --without-paige
 ```
 
-*Note : Contrairement aux modes exclusifs, ces options peuvent être combinées avec `--docx`.*
+### Convertir un fichier Word
 
-### Convertir un fichier spécifique
-
-Utilisez l'option `--docx` ou `-d` :
+L'option `--docx` ou `-d` est obligatoire :
 
 ```bash
 dotnet run -- --docx "MonDocument.docx"
+# ou
+dotnet run -- -d "MonDocument.docx"
 ```
 
 ## Tests
