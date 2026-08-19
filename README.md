@@ -76,6 +76,10 @@ dotnet test
 
 Le projet utilise **xUnit** pour valider la logique de transformation du texte (italique, ponctuation française, tirets cadratins, etc.). Une intégration continue (CI) est configurée via GitHub Actions.
 
+## Contribution
+
+La branche `main` est protégée. Créez une branche dédiée pour chaque modification et intégrez-la via une pull request. Les workflows de build et de release compilent et exécutent les tests avant de publier les artefacts.
+
 ## Structure de sortie
 
 ### Typst (.typ)
