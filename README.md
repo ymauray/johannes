@@ -1,5 +1,8 @@
 # Johannes
 
+[![Build .NET](https://github.com/ymauray/johannes/actions/workflows/dotnet.yml/badge.svg)](https://github.com/ymauray/johannes/actions/workflows/dotnet.yml)
+[![Licence MIT](https://img.shields.io/badge/Licence-MIT-yellow.svg)](LICENSE)
+
 Johannes est un outil en ligne de commande (CLI) développé en .NET 10 permettant de convertir des fichiers Microsoft Word (`.docx`) vers les formats [Typst](https://typst.app/) et [Paige](https://github.com/ymauray/paige).
 
 Le nom du projet est un hommage à Johannes Gutenberg, l'inventeur de l'imprimerie à caractères mobiles.
