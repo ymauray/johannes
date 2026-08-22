@@ -10,6 +10,24 @@ updates:
         patterns:
           - "*"
 
+  - package-ecosystem: "nuget"
+    directory: "/Johannes"
+    schedule:
+      interval: "weekly"
+    groups:
+      dotnet-dependencies:
+        patterns:
+          - "*"
+
+  - package-ecosystem: "nuget"
+    directory: "/Johannes.Tests"
+    schedule:
+      interval: "weekly"
+    groups:
+      dotnet-dependencies:
+        patterns:
+          - "*"
+
   # Surveiller les mises à jour des GitHub Actions
   - package-ecosystem: "github-actions"
     directory: "/"
