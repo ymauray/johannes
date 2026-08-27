@@ -42,6 +42,46 @@ public class PaigeExporterTests
 	}
 
 	[Fact]
+	public void UnRun_ShouldMergeConsecutiveItalicRunsIntoSingleEmTag()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Sed non ", isItalic = true },
+			new ParagraphRun { content = "mauris", isItalic = true },
+			new ParagraphRun { content = " vitae massa ", isItalic = true },
+			new ParagraphRun { content = "imperdiet", isItalic = true },
+			new ParagraphRun { content = " ", isItalic = true },
+			new ParagraphRun { content = "maximus", isItalic = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<em>Sed non mauris vitae massa imperdiet maximus</em>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleMixedItalicAndNonItalicRuns()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Normal ", isItalic = false },
+			new ParagraphRun { content = "italic1 ", isItalic = true },
+			new ParagraphRun { content = "italic2", isItalic = true },
+			new ParagraphRun { content = " normal again", isItalic = false }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("Normal <em>italic1 italic2</em> normal again", result);
+	}
+
+	[Fact]
 	public void UnRun_ShouldHandleEmDash()
 	{
 		// Arrange

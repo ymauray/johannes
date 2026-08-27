@@ -121,21 +121,35 @@ namespace Johannes
 		internal static string UnRun(List<ParagraphRun> runs)
 		{
 			var sb = new System.Text.StringBuilder();
+			var currentContent = new System.Text.StringBuilder();
+			bool? currentItalic = null;
+
 			foreach (var run in runs)
 			{
-				var content = "";
-
-				foreach (var c in run.content)
+				if (string.IsNullOrEmpty(run.content))
 				{
-					var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
-					content += Replace(c, bytes);
+					continue;
 				}
 
-				if (run.isItalic)
+				if (currentItalic == run.isItalic)
 				{
-					content = $"<em>{content}</em>";
+					AppendRunContent(currentContent, run.content);
 				}
-				sb.Append(content);
+				else
+				{
+					if (currentItalic.HasValue)
+					{
+						FlushRun(sb, currentContent, currentItalic.Value);
+					}
+
+					currentItalic = run.isItalic;
+					AppendRunContent(currentContent, run.content);
+				}
+			}
+
+			if (currentItalic.HasValue)
+			{
+				FlushRun(sb, currentContent, currentItalic.Value);
 			}
 
 			var data = sb.ToString();
@@ -147,6 +161,22 @@ namespace Johannes
 			data = SemiColonRegex().Replace(data, "&#160;;");
 
 			return data;
+		}
+
+		private static void AppendRunContent(System.Text.StringBuilder target, string text)
+		{
+			foreach (var c in text)
+			{
+				var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
+				target.Append(Replace(c, bytes));
+			}
+		}
+
+		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic)
+		{
+			var text = source.ToString();
+			target.Append(isItalic ? $"<em>{text}</em>" : text);
+			source.Clear();
 		}
 
 		private static string Replace(char c, byte[] bytes) => bytes switch
