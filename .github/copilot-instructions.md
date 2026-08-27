@@ -10,6 +10,7 @@ Ce document définit les règles de développement et d'interaction pour le proj
 ## 2. Gestion des Commits par l'IA
 - **Invitation uniquement** : L'IA ne doit JAMAIS effectuer de commit de sa propre initiative. Elle doit attendre une instruction explicite (Directive) de l'utilisateur.
 - **Discrétion** : L'IA ne doit PAS demander à l'utilisateur s'il souhaite committer après chaque modification. C'est à l'utilisateur de décider du moment opportun pour consolider les changements.
+- **Co-auteur** : L'agent IA doit obligatoirement s'identifier dans les commits comme co-auteur (via la mention `Co-authored-by: <Nom> <email>` dans le message de commit).
 
 ## 3. Gestion des Branches et Pull Requests
 - La branche `main` est protégée. Toute modification doit être développée sur une branche dédiée et intégrée via une pull request.
