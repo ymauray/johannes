@@ -214,6 +214,7 @@ public class PaigeExporterTests
 		Assert.Contains("id: \"chapitre_1\"", output);
 		Assert.Contains("<body class=\"chapter\">", output);
 		Assert.Contains("<h1>Chapitre 1</h1>", output);
+		Assert.Contains("<h1>Chapitre 1</h1>\n\t<p>Contenu 1</p>", output);
 		Assert.Contains("<p>Contenu 1</p>", output);
 		// Validate closure with at least some newlines (matching the original output)
 		Assert.Contains("</body>\n]\n\n", output);

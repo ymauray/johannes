@@ -87,6 +87,7 @@ namespace Johannes
 					</head>
 					<body class="chapter">
 						<h1>{{content}}</h1>
+
 					""");
 					chapterNeedsToBeClosed = true;
 					break;
