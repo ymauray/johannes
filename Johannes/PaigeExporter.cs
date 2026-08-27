@@ -87,6 +87,7 @@ namespace Johannes
 					</head>
 					<body class="chapter">
 						<h1>{{content}}</h1>
+
 					""");
 					chapterNeedsToBeClosed = true;
 					break;
@@ -121,21 +122,39 @@ namespace Johannes
 		internal static string UnRun(List<ParagraphRun> runs)
 		{
 			var sb = new System.Text.StringBuilder();
+			var currentContent = new System.Text.StringBuilder();
+			bool? currentItalic = null;
+			bool? currentBold = null;
+			string? currentFont = null;
+
 			foreach (var run in runs)
 			{
-				var content = "";
-
-				foreach (var c in run.content)
+				if (string.IsNullOrEmpty(run.content))
 				{
-					var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
-					content += Replace(c, bytes);
+					continue;
 				}
 
-				if (run.isItalic)
+				if (currentItalic == run.isItalic && currentBold == run.isBold && currentFont == run.font)
 				{
-					content = $"<em>{content}</em>";
+					AppendRunContent(currentContent, run.content);
 				}
-				sb.Append(content);
+				else
+				{
+					if (currentItalic.HasValue && currentBold.HasValue)
+					{
+						FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value, currentFont);
+					}
+
+					currentItalic = run.isItalic;
+					currentBold = run.isBold;
+					currentFont = run.font;
+					AppendRunContent(currentContent, run.content);
+				}
+			}
+
+			if (currentItalic.HasValue && currentBold.HasValue)
+			{
+				FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value, currentFont);
 			}
 
 			var data = sb.ToString();
@@ -148,6 +167,38 @@ namespace Johannes
 
 			return data;
 		}
+
+		private static void AppendRunContent(System.Text.StringBuilder target, string text)
+		{
+			foreach (var c in text)
+			{
+				var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
+				target.Append(Replace(c, bytes));
+			}
+		}
+
+		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic, bool isBold, string? font)
+		{
+			var text = source.ToString();
+			if (isItalic)
+			{
+				text = $"<em>{text}</em>";
+			}
+			if (isBold)
+			{
+				text = $"<strong>{text}</strong>";
+			}
+			if (!string.IsNullOrEmpty(font))
+			{
+				var fontClass = $"police_{NormalizeFontName(font)}";
+				text = $"<span class=\"{fontClass}\">{text}</span>";
+			}
+			target.Append(text);
+			source.Clear();
+		}
+
+		internal static string NormalizeFontName(string font) =>
+			Regex.Replace(font.Trim(), @"\s+", "_");
 
 		private static string Replace(char c, byte[] bytes) => bytes switch
 		{

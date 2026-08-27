@@ -42,6 +42,145 @@ public class PaigeExporterTests
 	}
 
 	[Fact]
+	public void UnRun_ShouldMergeConsecutiveItalicRunsIntoSingleEmTag()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Sed non ", isItalic = true },
+			new ParagraphRun { content = "mauris", isItalic = true },
+			new ParagraphRun { content = " vitae massa ", isItalic = true },
+			new ParagraphRun { content = "imperdiet", isItalic = true },
+			new ParagraphRun { content = " ", isItalic = true },
+			new ParagraphRun { content = "maximus", isItalic = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<em>Sed non mauris vitae massa imperdiet maximus</em>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleMixedItalicAndNonItalicRuns()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Normal ", isItalic = false },
+			new ParagraphRun { content = "italic1 ", isItalic = true },
+			new ParagraphRun { content = "italic2", isItalic = true },
+			new ParagraphRun { content = " normal again", isItalic = false }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("Normal <em>italic1 italic2</em> normal again", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleBold()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte gras", isBold = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<strong>Texte gras</strong>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldMergeConsecutiveBoldRunsIntoSingleStrongTag()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte ", isBold = true },
+			new ParagraphRun { content = "très ", isBold = true },
+			new ParagraphRun { content = "gras", isBold = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<strong>Texte très gras</strong>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleBoldAndItalics()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Gras et italique", isBold = true, isItalic = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<strong><em>Gras et italique</em></strong>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleFont()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte avec police", font = "Amazon Endure Book" }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<span class=\"police_Amazon_Endure_Book\">Texte avec police</span>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldMergeConsecutiveRunsWithSameFont()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Lorem ", font = "Amazon Endure Book" },
+			new ParagraphRun { content = "ipsum", font = "Amazon Endure Book" }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<span class=\"police_Amazon_Endure_Book\">Lorem ipsum</span>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleFontWithBoldAndItalic()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte", font = "Amazon Endure Book", isBold = true, isItalic = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<span class=\"police_Amazon_Endure_Book\"><strong><em>Texte</em></strong></span>", result);
+	}
+
+	[Fact]
 	public void UnRun_ShouldHandleEmDash()
 	{
 		// Arrange
@@ -75,6 +214,7 @@ public class PaigeExporterTests
 		Assert.Contains("id: \"chapitre_1\"", output);
 		Assert.Contains("<body class=\"chapter\">", output);
 		Assert.Contains("<h1>Chapitre 1</h1>", output);
+		Assert.Contains("<h1>Chapitre 1</h1>\n\t<p>Contenu 1</p>", output);
 		Assert.Contains("<p>Contenu 1</p>", output);
 		// Validate closure with at least some newlines (matching the original output)
 		Assert.Contains("</body>\n]\n\n", output);

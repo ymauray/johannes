@@ -42,6 +42,105 @@ public class TypstExporterTests
 	}
 
 	[Fact]
+	public void UnRun_ShouldHandleBold()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Hello", isBold = true }
+		};
+
+		// Act
+		var result = TypstExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("*Hello*", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldMergeConsecutiveBoldRuns()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte ", isBold = true },
+			new ParagraphRun { content = "en ", isBold = true },
+			new ParagraphRun { content = "gras", isBold = true }
+		};
+
+		// Act
+		var result = TypstExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("*Texte en gras*", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleBoldAndItalics()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Gras et italique", isBold = true, isItalic = true }
+		};
+
+		// Act
+		var result = TypstExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("*_Gras et italique_*", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleFont()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte avec police", font = "Amazon Endure Book" }
+		};
+
+		// Act
+		var result = TypstExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("#police_Amazon_Endure_Book([Texte avec police])", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldMergeConsecutiveRunsWithSameFont()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Lorem ", font = "Amazon Endure Book" },
+			new ParagraphRun { content = "ipsum", font = "Amazon Endure Book" }
+		};
+
+		// Act
+		var result = TypstExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("#police_Amazon_Endure_Book([Lorem ipsum])", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleFontWithBoldAndItalics()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte", font = "Amazon Endure Book", isBold = true, isItalic = true }
+		};
+
+		// Act
+		var result = TypstExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("#police_Amazon_Endure_Book([*_Texte_*])", result);
+	}
+
+	[Fact]
 	public void Replace_ShouldHandleEmDash()
 	{
 		// Arrange
@@ -186,6 +285,42 @@ public class TypstExporterTests
 
 			// Assert
 			Assert.Contains("#let ellipsis() = {", File.ReadAllText(supportFunctionsFile));
+		}
+		finally
+		{
+			Directory.Delete(directory, recursive: true);
+		}
+	}
+
+	[Fact]
+	public void Paragraph_WithFont_ShouldExportAndCreateDefaultFontFunction()
+	{
+		// Arrange
+		var directory = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+		Directory.CreateDirectory(directory);
+		var baseFile = Path.Combine(directory, "document");
+		var typstFile = $"{baseFile}.typ";
+		var supportFunctionsFile = Path.Combine(directory, "support-functions.typ");
+
+		try
+		{
+			var exporter = new TypstExporter(baseFile);
+
+			// Act
+			exporter.Paragraph("Normal", [new ParagraphRun { content = "Contenu", font = "Amazon Endure Book" }]);
+			exporter.FinishExport();
+
+			// Assert
+			Assert.Contains(
+				"#police_Amazon_Endure_Book([Contenu])",
+				File.ReadAllText(typstFile));
+			Assert.Contains(
+				"""
+				#let police_Amazon_Endure_Book(body) = {
+				  [#body]
+				}
+				""".ReplaceLineEndings("\n"),
+				File.ReadAllText(supportFunctionsFile).ReplaceLineEndings("\n"));
 		}
 		finally
 		{

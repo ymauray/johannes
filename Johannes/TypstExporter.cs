@@ -185,6 +185,17 @@ namespace Johannes
 
 		public override void Paragraph(string styleId, List<ParagraphRun> runs)
 		{
+			var fontFunctions = runs
+				.Where(r => !string.IsNullOrEmpty(r.font))
+				.Select(r => SupportFunction.ForFont(r.font!))
+				.DistinctBy(f => f.Name)
+				.ToList();
+
+			if (fontFunctions.Count > 0)
+			{
+				EnsureSupportFunctions(_supportFunctionsFilename, fontFunctions);
+			}
+
 			var content = UnRun(runs);
 
 			switch (styleId)
@@ -213,21 +224,39 @@ namespace Johannes
 		internal static string UnRun(List<ParagraphRun> runs)
 		{
 			var sb = new System.Text.StringBuilder();
+			var currentContent = new System.Text.StringBuilder();
+			bool? currentItalic = null;
+			bool? currentBold = null;
+			string? currentFont = null;
+
 			foreach (var run in runs)
 			{
-				var content = "";
-
-				foreach (var c in run.content)
+				if (string.IsNullOrEmpty(run.content))
 				{
-					var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
-					content += Replace(c, bytes);
+					continue;
 				}
 
-				if (run.isItalic)
+				if (currentItalic == run.isItalic && currentBold == run.isBold && currentFont == run.font)
 				{
-					content = $"_{content}_";
+					AppendRunContent(currentContent, run.content);
 				}
-				sb.Append(content);
+				else
+				{
+					if (currentItalic.HasValue && currentBold.HasValue)
+					{
+						FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value, currentFont);
+					}
+
+					currentItalic = run.isItalic;
+					currentBold = run.isBold;
+					currentFont = run.font;
+					AppendRunContent(currentContent, run.content);
+				}
+			}
+
+			if (currentItalic.HasValue && currentBold.HasValue)
+			{
+				FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value, currentFont);
 			}
 
 			var data = sb.ToString();
@@ -239,6 +268,35 @@ namespace Johannes
 			data = SemiColonRegex().Replace(data, "~;");
 
 			return data;
+		}
+
+		private static void AppendRunContent(System.Text.StringBuilder target, string text)
+		{
+			foreach (var c in text)
+			{
+				var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
+				target.Append(Replace(c, bytes));
+			}
+		}
+
+		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic, bool isBold, string? font)
+		{
+			var text = source.ToString();
+			if (isItalic)
+			{
+				text = $"_{text}_";
+			}
+			if (isBold)
+			{
+				text = $"*{text}*";
+			}
+			if (!string.IsNullOrEmpty(font))
+			{
+				var policeName = SupportFunction.ForFont(font).Name;
+				text = $"#{policeName}([{text}])";
+			}
+			target.Append(text);
+			source.Clear();
 		}
 
 		public static string Replace(char c, byte[] bytes) => bytes switch
@@ -256,7 +314,7 @@ namespace Johannes
 			_handle.Close();
 		}
 
-		private sealed record SupportFunction(string Name, string Definition)
+		internal sealed record SupportFunction(string Name, string Definition)
 		{
 			public static SupportFunction ForStyle(string styleId)
 			{
@@ -269,6 +327,22 @@ namespace Johannes
 					}
 					""");
 			}
+
+			public static SupportFunction ForFont(string font)
+			{
+				var fontId = NormalizeFontName(font);
+				var name = $"police_{fontId}";
+				return new(
+					name,
+					$$"""
+					#let {{name}}(body) = {
+					  [#body]
+					}
+					""");
+			}
+
+			public static string NormalizeFontName(string font) =>
+				Regex.Replace(font.Trim(), @"\s+", "_");
 		}
 	}
 }
