@@ -16,7 +16,8 @@ Le nom du projet est un hommage à Johannes Gutenberg, l'inventeur de l'imprimer
   - `Normal` -> Texte brut.
   - `Ellipse` -> Appel à une fonction `#ellipsis()` (Typst) ou séparateur visuel (Paige).
   - Autres styles -> Appel à une fonction `#style_<StyleId>()` (Typst) ou paragraphe de classe `style_<StyleId>` (Paige).
-- **Formatage** : Support de l'italique.
+- **Formatage** : Support de l'italique (`<em>` / `_..._`), du gras (`<strong>` / `*...*`) et fusion automatique des segments de texte consécutifs de même formatage.
+- **Polices de caractères** : Prise en charge des changements de police (`RunFonts`) via une fonction Typst `#police_<NomDeLaPolice>()` et une balise Paige `<span class="police_<NomDeLaPolice>">`.
 - **Typographie française** : Gestion automatique des espaces insécables avant la ponctuation double (`?`, `!`, `:`, `;`).
 - **Nettoyage** : Conversion des tirets cadratins et espaces insécables Word vers la syntaxe appropriée pour chaque format.
 
@@ -78,7 +79,7 @@ Pour lancer les tests unitaires :
 dotnet test
 ```
 
-Le projet utilise **xUnit** pour valider la logique de transformation du texte (italique, ponctuation française, tirets cadratins, etc.). Une intégration continue (CI) est configurée via GitHub Actions.
+Le projet utilise **xUnit** pour valider la logique de transformation du texte (italique, gras, polices de caractères, ponctuation française, tirets cadratins, etc.). Une intégration continue (CI) est configurée via GitHub Actions.
 
 ## Contribution
 
@@ -94,11 +95,11 @@ Le programme ajoute automatiquement un import au début du fichier :
 #import "/support-functions.typ" : *
 ```
 
-Le fichier `support-functions.typ` est créé automatiquement s'il est absent. Johannes y ajoute les implémentations par défaut de `#ellipsis()` et `#titre()`, ainsi que celles des fonctions requises par les styles Word personnalisés. Chaque fonction ajoutée est signalée par un commentaire et les définitions existantes sont préservées afin de pouvoir les personnaliser.
+Le fichier `support-functions.typ` est créé automatiquement s'il est absent. Johannes y ajoute les implémentations par défaut de `#ellipsis()` et `#titre()`, ainsi que celles des fonctions requises par les styles Word personnalisés (`#style_<StyleId>()`) et les polices de caractères (`#police_<NomDeLaPolice>()`). Chaque fonction ajoutée est signalée par un commentaire et les définitions existantes sont préservées afin de pouvoir les personnaliser.
 
 ### Paige (.paige)
 
-Le format Paige est un DSL (Domain Specific Language) qui permet de générer des fichiers EPUB. Johannes génère automatiquement le manifeste et la structure des chapitres à partir des styles Word. Les styles Word personnalisés sont exportés comme classes CSS `style_<StyleId>` ; ils restent sans effet tant qu'aucune règle CSS correspondante n'est définie.
+Le format Paige est un DSL (Domain Specific Language) qui permet de générer des fichiers EPUB. Johannes génère automatiquement le manifeste et la structure des chapitres à partir des styles Word. Les styles Word personnalisés sont exportés comme classes CSS `style_<StyleId>` et les polices spécifiques sous forme de balises `<span class="police_<NomDeLaPolice>">` ; ils restent sans effet tant qu'aucune règle CSS correspondante n'est définie.
 
 ## Architecture
 
