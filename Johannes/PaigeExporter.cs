@@ -123,6 +123,7 @@ namespace Johannes
 			var sb = new System.Text.StringBuilder();
 			var currentContent = new System.Text.StringBuilder();
 			bool? currentItalic = null;
+			bool? currentBold = null;
 
 			foreach (var run in runs)
 			{
@@ -131,25 +132,26 @@ namespace Johannes
 					continue;
 				}
 
-				if (currentItalic == run.isItalic)
+				if (currentItalic == run.isItalic && currentBold == run.isBold)
 				{
 					AppendRunContent(currentContent, run.content);
 				}
 				else
 				{
-					if (currentItalic.HasValue)
+					if (currentItalic.HasValue && currentBold.HasValue)
 					{
-						FlushRun(sb, currentContent, currentItalic.Value);
+						FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value);
 					}
 
 					currentItalic = run.isItalic;
+					currentBold = run.isBold;
 					AppendRunContent(currentContent, run.content);
 				}
 			}
 
-			if (currentItalic.HasValue)
+			if (currentItalic.HasValue && currentBold.HasValue)
 			{
-				FlushRun(sb, currentContent, currentItalic.Value);
+				FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value);
 			}
 
 			var data = sb.ToString();
@@ -172,10 +174,18 @@ namespace Johannes
 			}
 		}
 
-		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic)
+		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic, bool isBold)
 		{
 			var text = source.ToString();
-			target.Append(isItalic ? $"<em>{text}</em>" : text);
+			if (isItalic)
+			{
+				text = $"<em>{text}</em>";
+			}
+			if (isBold)
+			{
+				text = $"<strong>{text}</strong>";
+			}
+			target.Append(text);
 			source.Clear();
 		}
 

@@ -7,7 +7,8 @@ namespace Johannes
 {
 	public record ParagraphRun {
 		public required string content;
-		public required bool isItalic;
+		public bool isItalic { get; init; } = false;
+		public bool isBold { get; init; } = false;
 	}
 
 	public class DocumentParser(string docxFilePath)
@@ -94,6 +95,7 @@ namespace Johannes
 		{
 			var content = "";
 			var isItalic = false;
+			var isBold = false;
 
 			foreach (var child in run.ChildElements)
 			{
@@ -108,10 +110,16 @@ namespace Johannes
 						{
 							switch (prop)
 							{
-								case W.Italic:
+								case W.Italic i when i.Val is null || i.Val.Value:
 									isItalic = true;
 									break;
+								case W.Bold b when b.Val is null || b.Val.Value:
+									isBold = true;
+									break;
+								case W.Italic:
+								case W.Bold:
 								case W.ItalicComplexScript:
+								case W.BoldComplexScript:
 								case W.Languages:
 									// Silently ignore those properties here.
 									break;
@@ -131,7 +139,8 @@ namespace Johannes
 
 			return new ParagraphRun() {
 				content = content,
-				isItalic= isItalic
+				isItalic = isItalic,
+				isBold = isBold
 			};
 		}
 	}

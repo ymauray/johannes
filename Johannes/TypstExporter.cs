@@ -213,21 +213,37 @@ namespace Johannes
 		internal static string UnRun(List<ParagraphRun> runs)
 		{
 			var sb = new System.Text.StringBuilder();
+			var currentContent = new System.Text.StringBuilder();
+			bool? currentItalic = null;
+			bool? currentBold = null;
+
 			foreach (var run in runs)
 			{
-				var content = "";
-
-				foreach (var c in run.content)
+				if (string.IsNullOrEmpty(run.content))
 				{
-					var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
-					content += Replace(c, bytes);
+					continue;
 				}
 
-				if (run.isItalic)
+				if (currentItalic == run.isItalic && currentBold == run.isBold)
 				{
-					content = $"_{content}_";
+					AppendRunContent(currentContent, run.content);
 				}
-				sb.Append(content);
+				else
+				{
+					if (currentItalic.HasValue && currentBold.HasValue)
+					{
+						FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value);
+					}
+
+					currentItalic = run.isItalic;
+					currentBold = run.isBold;
+					AppendRunContent(currentContent, run.content);
+				}
+			}
+
+			if (currentItalic.HasValue && currentBold.HasValue)
+			{
+				FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value);
 			}
 
 			var data = sb.ToString();
@@ -239,6 +255,30 @@ namespace Johannes
 			data = SemiColonRegex().Replace(data, "~;");
 
 			return data;
+		}
+
+		private static void AppendRunContent(System.Text.StringBuilder target, string text)
+		{
+			foreach (var c in text)
+			{
+				var bytes = System.Text.Encoding.UTF8.GetBytes([c]);
+				target.Append(Replace(c, bytes));
+			}
+		}
+
+		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic, bool isBold)
+		{
+			var text = source.ToString();
+			if (isItalic)
+			{
+				text = $"_{text}_";
+			}
+			if (isBold)
+			{
+				text = $"*{text}*";
+			}
+			target.Append(text);
+			source.Clear();
 		}
 
 		public static string Replace(char c, byte[] bytes) => bytes switch

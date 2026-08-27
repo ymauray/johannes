@@ -42,6 +42,56 @@ public class TypstExporterTests
 	}
 
 	[Fact]
+	public void UnRun_ShouldHandleBold()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Hello", isBold = true }
+		};
+
+		// Act
+		var result = TypstExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("*Hello*", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldMergeConsecutiveBoldRuns()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte ", isBold = true },
+			new ParagraphRun { content = "en ", isBold = true },
+			new ParagraphRun { content = "gras", isBold = true }
+		};
+
+		// Act
+		var result = TypstExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("*Texte en gras*", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleBoldAndItalics()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Gras et italique", isBold = true, isItalic = true }
+		};
+
+		// Act
+		var result = TypstExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("*_Gras et italique_*", result);
+	}
+
+	[Fact]
 	public void Replace_ShouldHandleEmDash()
 	{
 		// Arrange

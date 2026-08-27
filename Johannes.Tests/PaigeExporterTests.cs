@@ -82,6 +82,56 @@ public class PaigeExporterTests
 	}
 
 	[Fact]
+	public void UnRun_ShouldHandleBold()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte gras", isBold = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<strong>Texte gras</strong>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldMergeConsecutiveBoldRunsIntoSingleStrongTag()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte ", isBold = true },
+			new ParagraphRun { content = "très ", isBold = true },
+			new ParagraphRun { content = "gras", isBold = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<strong>Texte très gras</strong>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleBoldAndItalics()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Gras et italique", isBold = true, isItalic = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<strong><em>Gras et italique</em></strong>", result);
+	}
+
+	[Fact]
 	public void UnRun_ShouldHandleEmDash()
 	{
 		// Arrange
