@@ -9,6 +9,7 @@ namespace Johannes
 		public required string content;
 		public bool isItalic { get; init; } = false;
 		public bool isBold { get; init; } = false;
+		public string? font { get; init; } = null;
 	}
 
 	public class DocumentParser(string docxFilePath)
@@ -96,6 +97,7 @@ namespace Johannes
 			var content = "";
 			var isItalic = false;
 			var isBold = false;
+			string? font = null;
 
 			foreach (var child in run.ChildElements)
 			{
@@ -115,6 +117,13 @@ namespace Johannes
 									break;
 								case W.Bold b when b.Val is null || b.Val.Value:
 									isBold = true;
+									break;
+								case W.RunFonts rf:
+									var fontName = rf.Ascii?.Value ?? rf.HighAnsi?.Value ?? rf.ComplexScript?.Value ?? rf.EastAsia?.Value;
+									if (!string.IsNullOrWhiteSpace(fontName))
+									{
+										font = fontName;
+									}
 									break;
 								case W.Italic:
 								case W.Bold:
@@ -140,7 +149,8 @@ namespace Johannes
 			return new ParagraphRun() {
 				content = content,
 				isItalic = isItalic,
-				isBold = isBold
+				isBold = isBold,
+				font = font
 			};
 		}
 	}

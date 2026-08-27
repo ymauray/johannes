@@ -185,6 +185,17 @@ namespace Johannes
 
 		public override void Paragraph(string styleId, List<ParagraphRun> runs)
 		{
+			var fontFunctions = runs
+				.Where(r => !string.IsNullOrEmpty(r.font))
+				.Select(r => SupportFunction.ForFont(r.font!))
+				.DistinctBy(f => f.Name)
+				.ToList();
+
+			if (fontFunctions.Count > 0)
+			{
+				EnsureSupportFunctions(_supportFunctionsFilename, fontFunctions);
+			}
+
 			var content = UnRun(runs);
 
 			switch (styleId)
@@ -216,6 +227,7 @@ namespace Johannes
 			var currentContent = new System.Text.StringBuilder();
 			bool? currentItalic = null;
 			bool? currentBold = null;
+			string? currentFont = null;
 
 			foreach (var run in runs)
 			{
@@ -224,7 +236,7 @@ namespace Johannes
 					continue;
 				}
 
-				if (currentItalic == run.isItalic && currentBold == run.isBold)
+				if (currentItalic == run.isItalic && currentBold == run.isBold && currentFont == run.font)
 				{
 					AppendRunContent(currentContent, run.content);
 				}
@@ -232,18 +244,19 @@ namespace Johannes
 				{
 					if (currentItalic.HasValue && currentBold.HasValue)
 					{
-						FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value);
+						FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value, currentFont);
 					}
 
 					currentItalic = run.isItalic;
 					currentBold = run.isBold;
+					currentFont = run.font;
 					AppendRunContent(currentContent, run.content);
 				}
 			}
 
 			if (currentItalic.HasValue && currentBold.HasValue)
 			{
-				FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value);
+				FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value, currentFont);
 			}
 
 			var data = sb.ToString();
@@ -266,7 +279,7 @@ namespace Johannes
 			}
 		}
 
-		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic, bool isBold)
+		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic, bool isBold, string? font)
 		{
 			var text = source.ToString();
 			if (isItalic)
@@ -276,6 +289,11 @@ namespace Johannes
 			if (isBold)
 			{
 				text = $"*{text}*";
+			}
+			if (!string.IsNullOrEmpty(font))
+			{
+				var policeName = SupportFunction.ForFont(font).Name;
+				text = $"#{policeName}([{text}])";
 			}
 			target.Append(text);
 			source.Clear();
@@ -296,7 +314,7 @@ namespace Johannes
 			_handle.Close();
 		}
 
-		private sealed record SupportFunction(string Name, string Definition)
+		internal sealed record SupportFunction(string Name, string Definition)
 		{
 			public static SupportFunction ForStyle(string styleId)
 			{
@@ -309,6 +327,22 @@ namespace Johannes
 					}
 					""");
 			}
+
+			public static SupportFunction ForFont(string font)
+			{
+				var fontId = NormalizeFontName(font);
+				var name = $"police_{fontId}";
+				return new(
+					name,
+					$$"""
+					#let {{name}}(body) = {
+					  [#body]
+					}
+					""");
+			}
+
+			public static string NormalizeFontName(string font) =>
+				Regex.Replace(font.Trim(), @"\s+", "_");
 		}
 	}
 }

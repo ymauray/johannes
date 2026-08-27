@@ -76,6 +76,38 @@ public class DocumentParserTests
 		Assert.True(capturedRuns[1].isItalic);
 	}
 
+	[Fact]
+	public void ParseParagraph_WithRunFonts_ShouldParseFontPropertyCorrectly()
+	{
+		// Arrange
+		string? capturedStyle = null;
+		List<ParagraphRun>? capturedRuns = null;
+		var exporter = new FakeExporterWithCapture((style, runs) =>
+		{
+			capturedStyle = style;
+			capturedRuns = runs;
+		});
+		var parser = new DocumentParser(exporter);
+
+		var paragraph = new Paragraph(
+			new ParagraphProperties(new ParagraphStyleId { Val = "Normal" }),
+			new Run(
+				new RunProperties(new RunFonts { Ascii = "Amazon Endure Book", HighAnsi = "Amazon Endure Book" }),
+				new Text("Texte avec police")
+			)
+		);
+
+		// Act
+		parser.ParseParagraph(paragraph);
+
+		// Assert
+		Assert.Equal("Normal", capturedStyle);
+		Assert.NotNull(capturedRuns);
+		Assert.Single(capturedRuns);
+		Assert.Equal("Texte avec police", capturedRuns[0].content);
+		Assert.Equal("Amazon Endure Book", capturedRuns[0].font);
+	}
+
 	private class FakeExporterWithCapture(Action<string, List<ParagraphRun>> onParagraph) : IExporter
 	{
 		public void Paragraph(string styleId, List<ParagraphRun> runs) => onParagraph(styleId, runs);

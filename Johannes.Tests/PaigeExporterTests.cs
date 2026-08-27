@@ -132,6 +132,55 @@ public class PaigeExporterTests
 	}
 
 	[Fact]
+	public void UnRun_ShouldHandleFont()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte avec police", font = "Amazon Endure Book" }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<span class=\"police_Amazon_Endure_Book\">Texte avec police</span>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldMergeConsecutiveRunsWithSameFont()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Lorem ", font = "Amazon Endure Book" },
+			new ParagraphRun { content = "ipsum", font = "Amazon Endure Book" }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<span class=\"police_Amazon_Endure_Book\">Lorem ipsum</span>", result);
+	}
+
+	[Fact]
+	public void UnRun_ShouldHandleFontWithBoldAndItalic()
+	{
+		// Arrange
+		var runs = new List<ParagraphRun>
+		{
+			new ParagraphRun { content = "Texte", font = "Amazon Endure Book", isBold = true, isItalic = true }
+		};
+
+		// Act
+		var result = PaigeExporter.UnRun(runs);
+
+		// Assert
+		Assert.Equal("<span class=\"police_Amazon_Endure_Book\"><strong><em>Texte</em></strong></span>", result);
+	}
+
+	[Fact]
 	public void UnRun_ShouldHandleEmDash()
 	{
 		// Arrange

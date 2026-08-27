@@ -124,6 +124,7 @@ namespace Johannes
 			var currentContent = new System.Text.StringBuilder();
 			bool? currentItalic = null;
 			bool? currentBold = null;
+			string? currentFont = null;
 
 			foreach (var run in runs)
 			{
@@ -132,7 +133,7 @@ namespace Johannes
 					continue;
 				}
 
-				if (currentItalic == run.isItalic && currentBold == run.isBold)
+				if (currentItalic == run.isItalic && currentBold == run.isBold && currentFont == run.font)
 				{
 					AppendRunContent(currentContent, run.content);
 				}
@@ -140,18 +141,19 @@ namespace Johannes
 				{
 					if (currentItalic.HasValue && currentBold.HasValue)
 					{
-						FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value);
+						FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value, currentFont);
 					}
 
 					currentItalic = run.isItalic;
 					currentBold = run.isBold;
+					currentFont = run.font;
 					AppendRunContent(currentContent, run.content);
 				}
 			}
 
 			if (currentItalic.HasValue && currentBold.HasValue)
 			{
-				FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value);
+				FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value, currentFont);
 			}
 
 			var data = sb.ToString();
@@ -174,7 +176,7 @@ namespace Johannes
 			}
 		}
 
-		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic, bool isBold)
+		private static void FlushRun(System.Text.StringBuilder target, System.Text.StringBuilder source, bool isItalic, bool isBold, string? font)
 		{
 			var text = source.ToString();
 			if (isItalic)
@@ -185,9 +187,17 @@ namespace Johannes
 			{
 				text = $"<strong>{text}</strong>";
 			}
+			if (!string.IsNullOrEmpty(font))
+			{
+				var fontClass = $"police_{NormalizeFontName(font)}";
+				text = $"<span class=\"{fontClass}\">{text}</span>";
+			}
 			target.Append(text);
 			source.Clear();
 		}
+
+		internal static string NormalizeFontName(string font) =>
+			Regex.Replace(font.Trim(), @"\s+", "_");
 
 		private static string Replace(char c, byte[] bytes) => bytes switch
 		{
