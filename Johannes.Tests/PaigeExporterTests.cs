@@ -293,6 +293,25 @@ public class PaigeExporterTests
 	}
 
 	[Fact]
+	public void Paragraph_WithTitre1Style_ShouldLinkSupportStylesheetAfterStyleInHead()
+	{
+		// Arrange
+		using var ms = new MemoryStream();
+		var exporter = new PaigeExporter(ms);
+
+		// Act
+		exporter.Paragraph("Titre1", [new ParagraphRun { content = "Chapitre 1", isItalic = false }]);
+		exporter.FinishExport();
+
+		// Assert
+		var output = System.Text.Encoding.UTF8.GetString(ms.ToArray()).Replace("\r\n", "\n");
+		var styleEnd = output.IndexOf("</style>", StringComparison.Ordinal);
+		var link = output.IndexOf("<link rel=\"stylesheet\" type=\"text/css\" href=\"support-styles.css\"/>", StringComparison.Ordinal);
+		var headEnd = output.IndexOf("</head>", StringComparison.Ordinal);
+		Assert.True(styleEnd >= 0 && link > styleEnd && link < headEnd);
+	}
+
+	[Fact]
 	public void Paragraph_WithTitreStyle_ShouldExportParagraphWithTitreStyleClass()
 	{
 		// Arrange

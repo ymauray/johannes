@@ -84,6 +84,7 @@ namespace Johannes
 								margin: initial;
 							}
 						</style>
+						<link rel="stylesheet" type="text/css" href="support-styles.css"/>
 					</head>
 					<body class="chapter">
 						<h1>{{content}}</h1>
