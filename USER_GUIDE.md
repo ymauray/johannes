@@ -93,7 +93,7 @@ johannes --docx Anya.docx --rebuild
 | `--skip <étapes>` | Saute ces étapes. |
 | `--rebuild` | Ignore le cache : reconstruit tout. |
 | `--revisions[=<fichier>]`, `--author <nom>` | Écrit la copie annotée (voir §5). |
-| `--verbose`, `-v` | Détail des anomalies et des commandes lancées. |
+| `--verbose`, `-v` | Détail des anomalies et des commandes lancées ; signale aussi les étapes non demandées. |
 | `--dry-run` | Affiche le plan (étapes à faire / à sauter et pourquoi) sans rien exécuter. |
 | `--typst`, `--paige`, `--without-typst`, `--without-paige` | Conservées. Restreignent la chaîne à une branche (voir §8). |
 
@@ -179,6 +179,7 @@ Avant toute étape, johannes vérifie **le plus tôt possible**, pour échouer v
 | 6 | Échec de `typst compile` (sa sortie est reprise telle quelle) |
 | 7 | Échec de compilation `paige` |
 | 8 | Dépendance externe absente (`typst`) |
+| 9 | Échec de la génération des `.typ` / `.paige` (document non pris en charge, erreur d'écriture) |
 
 Les codes 1 à 5 sont ceux de `scrubx`, pour garder la compatibilité avec d'éventuels scripts.
 

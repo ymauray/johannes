@@ -25,3 +25,7 @@ Ce document définit les règles de développement et d'interaction pour le proj
 - **C# / .NET 10** : Utilisation des fonctionnalités modernes du langage.
 - **Indentation** : Tabulations pour le C#, espaces pour le Markdown/YAML/Typst/Paige (configuré via `.editorconfig`).
 - **Typographie** : Respect scrupuleux des règles typographiques françaises lors de l'export (espaces insécables, etc.).
+
+## 6. Reprise de session (chantier v2, branche `version2`)
+- Lire d'abord `ROADMAP.md`, section « Reprise à froid » : état d'avancement, carte du code, pièges connus, prochaine étape.
+- Puis `USER_GUIDE.md` (usage visé de `johannes` v2) et `TOOLCHAIN.md` (état des lieux de `scrubx` et `paige` avant regroupement).
