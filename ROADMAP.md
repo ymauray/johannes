@@ -62,13 +62,17 @@ Structure retenue : `Johannes.Core` (code commun), `Johannes.Scrubx`, `Johannes.
 
 ## Phase 2 — Contrôles préalables
 
-Tout est vérifié **avant** la première étape, pour échouer tôt et sans effet de bord.
+Tout est vérifié **avant** la première étape, pour échouer tôt et sans effet de bord. Code dans `Johannes.Core` : `Preflight`, `BookLayout`, `ExecutableLocator`, `Stages`, `ExitCodes`. Les contrôles ne sont pas encore appelés par l'exécutable (phase 3).
 
-- [ ] Document : existe (code 2), extension `.docx` (code 3)
-- [ ] `typst` présent dans le `PATH` (D6), sinon code 8 et message explicite
-- [ ] `epub/` : exactement un `.paige` (D5) ; zéro ou plusieurs → erreur claire, avec la liste des fichiers trouvés
-- [ ] Étapes sans objet (pas de `Papier/`, pas de `epub/`) : message d'information, pas d'erreur
-- [ ] Tests unitaires de chaque contrôle (système de fichiers simulé ou dossier temporaire)
+- [x] Document : existe (code 2), extension `.docx` insensible à la casse (code 3)
+- [x] `typst` présent dans le `PATH` (D6), code 8 et message explicite ; recherche tenant compte de `PATHEXT` (Windows) et du bit d'exécution (Unix)
+- [x] Étape `pdf` omise, avec information, s'il n'y a ni `Papier/` ni `Papier/*.typ` ; `typst` n'est alors pas exigé
+- [x] `epub/` : exactement un `.paige` à la racine du dossier (D5), sinon code 7 avec la liste des fichiers trouvés ; confirmé que `paige` ne cherche que dans la racine du dossier et prend le premier fichier (`paigeFiles[0]`), d'où l'intérêt du contrôle
+- [x] Étape `epub` omise, avec information, si `epub/` n'existe pas
+- [x] Tous les problèmes sont rapportés ; le code de sortie est celui du premier (document, puis `typst`, puis `epub/`)
+- [x] Contrôles limités aux étapes demandées (`Stages`)
+- [x] Tests unitaires sur dossiers temporaires (`PreflightTests`, `ExecutableLocatorTests`) : 266 tests verts au total
+- [x] Essai sur le dossier réel d'*Anya* : trois reliures et `template.paige` découverts, `typst` trouvé
 
 ## Phase 3 — Orchestrateur
 
