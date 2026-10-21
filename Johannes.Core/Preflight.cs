@@ -70,18 +70,9 @@ public static class Preflight
 
 	private static void CheckPaper(BookLayout layout, Stages requested, List<string> notices)
 	{
-		if (!requested.HasFlag(Stages.Pdf))
+		if (requested.HasFlag(Stages.Pdf) && layout.PdfOmissionReason is { } reason)
 		{
-			return;
-		}
-
-		if (layout.PaperDirectory is null)
-		{
-			notices.Add($"Pas de dossier '{BookLayout.PaperDirectoryName}' : l'étape pdf est omise.");
-		}
-		else if (layout.PaperSources.Count == 0)
-		{
-			notices.Add($"Aucun fichier .typ dans '{BookLayout.PaperDirectoryName}' : l'étape pdf est omise.");
+			notices.Add($"{Capitalize(reason)} : l'étape pdf est omise.");
 		}
 	}
 
@@ -92,9 +83,9 @@ public static class Preflight
 			return;
 		}
 
-		if (layout.EpubDirectory is null)
+		if (layout.EpubOmissionReason is { } reason)
 		{
-			notices.Add($"Pas de dossier '{BookLayout.EpubDirectoryName}' : l'étape epub est omise.");
+			notices.Add($"{Capitalize(reason)} : l'étape epub est omise.");
 			return;
 		}
 
@@ -111,4 +102,6 @@ public static class Preflight
 				break;
 		}
 	}
+
+	private static string Capitalize(string text) => char.ToUpperInvariant(text[0]) + text[1..];
 }

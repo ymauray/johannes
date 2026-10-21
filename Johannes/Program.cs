@@ -1,19 +1,32 @@
 using System.CommandLine;
+using System.Text;
 using Johannes;
+
+Console.OutputEncoding = Encoding.UTF8;
 
 Option<FileInfo?> docxOption = new("--docx", "-d")
 {
 	Description = "Chemin vers un fichier .docx à traiter.",
 	Required = true
 };
-Option<bool> withoutTypstOption = new("--without-typst") { Description = "Ne pas exporter au format Typst." };
-Option<bool> withoutPaigeOption = new("--without-paige") { Description = "Ne pas exporter au format Paige." };
-Option<bool> typstOnlyOption = new("--typst") { Description = "Exporter UNIQUEMENT au format Typst. Aucune autre option autorisée (sauf --docx)." };
-Option<bool> paigeOnlyOption = new("--paige") { Description = "Exporter UNIQUEMENT au format Paige. Aucune autre option autorisée (sauf --docx)." };
+Option<string?> onlyOption = new("--only") { Description = "N'exécute que ces étapes (check, generate, pdf, epub), séparées par des virgules." };
+Option<string?> untilOption = new("--until") { Description = "S'arrête après cette étape (check, generate, pdf ou epub)." };
+Option<string?> skipOption = new("--skip") { Description = "Saute ces étapes, séparées par des virgules. check ne peut pas être sauté si generate s'exécute." };
+Option<bool> dryRunOption = new("--dry-run") { Description = "Affiche les étapes prévues sans rien exécuter." };
+Option<bool> verboseOption = new("--verbose", "-v") { Description = "Affiche aussi les étapes non demandées." };
+Option<bool> withoutTypstOption = new("--without-typst") { Description = "Ne pas exporter au format Typst (ni fabriquer les PDF)." };
+Option<bool> withoutPaigeOption = new("--without-paige") { Description = "Ne pas exporter au format Paige (ni fabriquer l'EPUB)." };
+Option<bool> typstOnlyOption = new("--typst") { Description = "Branche Typst uniquement : vérification, .typ et PDF. Incompatible avec --without-*." };
+Option<bool> paigeOnlyOption = new("--paige") { Description = "Branche Paige uniquement : vérification, .paige et EPUB. Incompatible avec --without-*." };
 
-var rootCommand = new RootCommand("johannes — convertit des fichiers .docx vers les formats Typst et Paige.")
+var rootCommand = new RootCommand("johannes — vérifie un fichier .docx puis fabrique les versions Typst, PDF, Paige et EPUB du livre.")
 {
 	docxOption,
+	onlyOption,
+	untilOption,
+	skipOption,
+	dryRunOption,
+	verboseOption,
 	withoutTypstOption,
 	withoutPaigeOption,
 	typstOnlyOption,
@@ -29,68 +42,92 @@ if (parseResult.Errors.Count > 0)
 		Console.Error.WriteLine($"Erreur : {error.Message}");
 	}
 
-	return;
+	return ExitCodes.InvalidArguments;
 }
 
-bool typstOnly = parseResult.GetValue<bool>(typstOnlyOption);
-bool paigeOnly = parseResult.GetValue<bool>(paigeOnlyOption);
-
-if (typstOnly || paigeOnly)
+if (!TryParseStages(parseResult.GetValue(onlyOption), "--only", out var only)
+	|| !TryParseStages(parseResult.GetValue(untilOption), "--until", out var until)
+	|| !TryParseStages(parseResult.GetValue(skipOption), "--skip", out var skip))
 {
-	if (typstOnly && paigeOnly)
+	return ExitCodes.InvalidArguments;
+}
+
+var plan = StagePlanner.Create(
+	new PlanRequest(
+		only,
+		until,
+		skip ?? Stages.None,
+		parseResult.GetValue(typstOnlyOption),
+		parseResult.GetValue(paigeOnlyOption),
+		parseResult.GetValue(withoutTypstOption),
+		parseResult.GetValue(withoutPaigeOption)),
+	out var planError);
+
+if (plan is null)
+{
+	Console.Error.WriteLine($"Erreur : {planError}");
+	return ExitCodes.InvalidArguments;
+}
+
+var docxPath = parseResult.GetValue(docxOption)!.FullName;
+
+var preflight = Preflight.Run(docxPath, plan.Stages);
+if (!preflight.Ok)
+{
+	foreach (var issue in preflight.Errors)
 	{
-		Console.WriteLine("Erreur : Les options --typst et --paige sont mutuellement exclusives.");
-		return;
+		Console.Error.WriteLine($"Erreur : {issue.Message}");
 	}
 
-	// Vérifie si une option interdite a été fournie.
-	// --docx est autorisé, mais --without-typst et --without-paige ne le sont pas.
-	var forbiddenOptions = parseResult.RootCommandResult.Children
-		.OfType<System.CommandLine.Parsing.OptionResult>()
-		.Where(o => o.Option.Name != "docx" && o.Option.Name != "typst" && o.Option.Name != "paige");
+	return preflight.ExitCode;
+}
 
-	if (forbiddenOptions.Any())
+var context = new PipelineContext(
+	docxPath,
+	preflight.Layout!,
+	plan,
+	parseResult.GetValue(verboseOption),
+	Console.Out,
+	Console.Error,
+	preflight.TypstPath);
+
+var pipeline = new Pipeline(
+[
+	new PendingStage(Stages.Check, phase: 4),
+	new GenerateStage(),
+	new PendingStage(Stages.Pdf, phase: 6, layout => layout.PdfOmissionReason),
+	new PendingStage(Stages.Epub, phase: 7, layout => layout.EpubOmissionReason),
+]);
+
+Console.WriteLine($"Traitement de : {docxPath}");
+
+if (parseResult.GetValue(dryRunOption))
+{
+	pipeline.Describe(context);
+	return ExitCodes.Success;
+}
+
+foreach (var note in plan.Notes)
+{
+	Console.WriteLine(note);
+}
+
+return pipeline.Run(context);
+
+static bool TryParseStages(string? text, string option, out Stages? stages)
+{
+	stages = null;
+	if (text is null)
 	{
-		Console.WriteLine($"Erreur : Lors de l'utilisation de {(typstOnly ? "--typst" : "--paige")}, vous ne pouvez pas utiliser --without-typst ou --without-paige.");
-		return;
+		return true;
 	}
-}
 
-FileInfo? fileInfo = parseResult.GetValue<FileInfo?>("--docx");
-bool withoutTypst = parseResult.GetValue<bool>(withoutTypstOption);
-bool withoutPaige = parseResult.GetValue<bool>(withoutPaigeOption);
+	if (!StagePlanner.TryParse(text, out var parsed, out var error))
+	{
+		Console.Error.WriteLine($"Erreur : {option} : {error}");
+		return false;
+	}
 
-if (typstOnly)
-{
-	withoutTypst = false;
-	withoutPaige = true;
-}
-else if (paigeOnly)
-{
-	withoutTypst = true;
-	withoutPaige = false;
-}
-
-if (fileInfo is null || !fileInfo.Exists)
-{
-	Console.Error.WriteLine($"Erreur : Le fichier .docx '{fileInfo?.FullName}' est introuvable.");
-	return;
-}
-
-Console.WriteLine($"Traitement de : {fileInfo.FullName}");
-var documentParser = new DocumentParser(fileInfo.FullName);
-var baseFile = Path.GetFileNameWithoutExtension(fileInfo.FullName);
-
-if (!withoutTypst)
-{
-	Console.WriteLine(" - Export vers Typst...");
-	var typstExporter = new TypstExporter(baseFile);
-	documentParser.ParseAndExport(typstExporter);
-}
-
-if (!withoutPaige)
-{
-	Console.WriteLine(" - Export vers Paige...");
-	var paigeExporter = new PaigeExporter(baseFile);
-	documentParser.ParseAndExport(paigeExporter);
+	stages = parsed;
+	return true;
 }

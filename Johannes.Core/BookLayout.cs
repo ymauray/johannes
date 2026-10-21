@@ -19,6 +19,16 @@ public sealed record BookLayout(
 	public const string PaperDirectoryName = "Papier";
 	public const string EpubDirectoryName = "epub";
 
+	/// <summary>Raison pour laquelle l'étape pdf est sans objet, ou <c>null</c> s'il y a des reliures à fabriquer.</summary>
+	public string? PdfOmissionReason =>
+		PaperDirectory is null ? $"pas de dossier '{PaperDirectoryName}'"
+		: PaperSources.Count == 0 ? $"aucun fichier .typ dans '{PaperDirectoryName}'"
+		: null;
+
+	/// <summary>Raison pour laquelle l'étape epub est sans objet, ou <c>null</c> s'il y a un projet EPUB.</summary>
+	public string? EpubOmissionReason =>
+		EpubDirectory is null ? $"pas de dossier '{EpubDirectoryName}'" : null;
+
 	public static BookLayout Discover(string docxPath)
 	{
 		var directory = Path.GetDirectoryName(Path.GetFullPath(docxPath))!;

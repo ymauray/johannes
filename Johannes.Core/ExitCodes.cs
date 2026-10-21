@@ -12,4 +12,5 @@ public static class ExitCodes
 	public const int TypstFailed = 6;
 	public const int PaigeFailed = 7;
 	public const int MissingDependency = 8;
+	public const int GenerationFailed = 9;
 }
