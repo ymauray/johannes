@@ -14,27 +14,30 @@ public sealed record BookLayout(
 	string? PaperDirectory,
 	IReadOnlyList<string> PaperSources,
 	string? EpubDirectory,
-	IReadOnlyList<string> EpubSources)
+	IReadOnlyList<string> EpubSources,
+	string PaperName = BookLayout.PaperDirectoryName,
+	string EpubName = BookLayout.EpubDirectoryName)
 {
 	public const string PaperDirectoryName = "Papier";
 	public const string EpubDirectoryName = "epub";
 
 	/// <summary>Raison pour laquelle l'étape pdf est sans objet, ou <c>null</c> s'il y a des reliures à fabriquer.</summary>
 	public string? PdfOmissionReason =>
-		PaperDirectory is null ? $"pas de dossier '{PaperDirectoryName}'"
-		: PaperSources.Count == 0 ? $"aucun fichier .typ dans '{PaperDirectoryName}'"
+		PaperDirectory is null ? $"pas de dossier '{PaperName}'"
+		: PaperSources.Count == 0 ? $"aucun fichier .typ dans '{PaperName}'"
 		: null;
 
 	/// <summary>Raison pour laquelle l'étape epub est sans objet, ou <c>null</c> s'il y a un projet EPUB.</summary>
 	public string? EpubOmissionReason =>
-		EpubDirectory is null ? $"pas de dossier '{EpubDirectoryName}'" : null;
+		EpubDirectory is null ? $"pas de dossier '{EpubName}'" : null;
 
-	public static BookLayout Discover(string docxPath)
+	public static BookLayout Discover(string docxPath, Settings? settings = null)
 	{
+		settings ??= Settings.Default;
 		var directory = Path.GetDirectoryName(Path.GetFullPath(docxPath))!;
 
-		var paper = Path.Combine(directory, PaperDirectoryName);
-		var epub = Path.Combine(directory, EpubDirectoryName);
+		var paper = Path.Combine(directory, settings.PaperDirectory);
+		var epub = Path.Combine(directory, settings.EpubDirectory);
 		var hasPaper = System.IO.Directory.Exists(paper);
 		var hasEpub = System.IO.Directory.Exists(epub);
 
@@ -43,7 +46,9 @@ public sealed record BookLayout(
 			hasPaper ? paper : null,
 			hasPaper ? Sorted(paper, "*.typ") : [],
 			hasEpub ? epub : null,
-			hasEpub ? Sorted(epub, "*.paige") : []);
+			hasEpub ? Sorted(epub, "*.paige") : [],
+			settings.PaperDirectory,
+			settings.EpubDirectory);
 	}
 
 	private static string[] Sorted(string directory, string pattern)

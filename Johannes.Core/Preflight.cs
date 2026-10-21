@@ -28,7 +28,8 @@ public static class Preflight
 	/// <param name="docxPath">Document source.</param>
 	/// <param name="requested">Étapes demandées : seuls leurs prérequis sont contrôlés.</param>
 	/// <param name="pathVariable">Valeur du <c>PATH</c> (celle de l'environnement par défaut).</param>
-	public static PreflightReport Run(string docxPath, Stages requested, string? pathVariable = null)
+	/// <param name="settings">Réglages (dossiers, chemin de <c>typst</c>) ; les valeurs par défaut sinon.</param>
+	public static PreflightReport Run(string docxPath, Stages requested, string? pathVariable = null, Settings? settings = null)
 	{
 		var errors = new List<PreflightIssue>();
 		var notices = new List<string>();
@@ -46,16 +47,27 @@ public static class Preflight
 		}
 		else
 		{
-			layout = BookLayout.Discover(fullPath);
+			layout = BookLayout.Discover(fullPath, settings);
 		}
 
 		string? typstPath = null;
 		if (requested.HasFlag(Stages.Pdf) && (layout is null || layout.PaperSources.Count > 0))
 		{
-			typstPath = ExecutableLocator.Find(TypstProgram, pathVariable);
-			if (typstPath is null)
+			if (settings?.TypstPath is { } configured)
 			{
-				errors.Add(new(ExitCodes.MissingDependency, "Le programme 'typst' est introuvable dans le PATH (nécessaire à la fabrication des PDF)."));
+				typstPath = File.Exists(configured) ? Path.GetFullPath(configured) : null;
+				if (typstPath is null)
+				{
+					errors.Add(new(ExitCodes.MissingDependency, $"Le programme 'typst' est introuvable à l'emplacement configuré '{configured}' (clé {ConfigKeys.TypstPath})."));
+				}
+			}
+			else
+			{
+				typstPath = ExecutableLocator.Find(TypstProgram, pathVariable);
+				if (typstPath is null)
+				{
+					errors.Add(new(ExitCodes.MissingDependency, "Le programme 'typst' est introuvable dans le PATH (nécessaire à la fabrication des PDF)."));
+				}
 			}
 		}
 

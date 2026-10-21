@@ -73,6 +73,20 @@ Avec `dotnet run`, ajoutez `--` avant les options : `dotnet run --project Johann
 | `--revisions[=<fichier>]`, `--author <nom>` | Écrit la copie annotée (`<nom>-relu.docx` par défaut). |
 | `--dry-run`, `--verbose`, `-v` | Plan sans exécution ; détail des anomalies et des commandes. |
 | `--typst`, `--paige`, `--without-typst`, `--without-paige` | Restreignent la chaîne à une branche. |
+| `--paper-directory`, `--epub-directory`, `--typst-path` | Remplacent la configuration. |
+
+## Configuration
+
+Les conventions suffisent (dossiers `Papier/` et `epub/`, `typst` dans le `PATH`). Pour s'en écarter, `johannes config` fonctionne comme `git config` :
+
+```bash
+johannes config --list
+johannes config paper-directory Print
+johannes config --user typst-path /opt/typst/bin/typst
+johannes config --unset paper-directory
+```
+
+Les valeurs viennent, du plus faible au plus fort, des défauts, du fichier de l'utilisateur (`--user`), du fichier `.johannes` du livre, puis des options de la ligne de commande. Voir [USER_GUIDE.md](USER_GUIDE.md), §6.
 
 ## Formats de sortie
 

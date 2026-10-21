@@ -6,18 +6,18 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 ## Reprise à froid — à lire en premier
 
-**État au 2026-10-21** : phases 0 à 8 faites, phase 10 en grande partie (y compris le niveau 2 de la phase 5). `johannes --docx X.docx` fait tout : vérification, génération, PDF, EPUB, avec cache incrémental. Restent : **phase 9** (`johannes config`, voulue plus tard par D3) et la fin de la **phase 10** (voir ci-dessous : tout ce qui reste dépend de l'utilisateur). Branche `version2`, tout est committé (voir `git log`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
+**État au 2026-10-21** : phases 0 à 9 faites, phase 10 en grande partie (y compris le niveau 2 de la phase 5). `johannes --docx X.docx` fait tout : vérification, génération, PDF, EPUB, avec cache incrémental. Reste la fin de la **phase 10** (voir ci-dessous : tout ce qui reste dépend de l'utilisateur). Branche `version2`, tout est committé (voir `git log`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
 
-**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (351 tests attendus).
+**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (383 tests attendus).
 
 **Carte du code**
 
 | Projet | Contenu |
 | ------ | ------- |
-| `Johannes.Core` | `Typography`, `WordXml`, `Stages`, `ExitCodes`, `BookLayout`, `ExecutableLocator`, `Preflight`, `StagePlan`/`StagePlanner`, `Pipeline` (avec `IStage`, `PipelineContext`, `StageOutcome`, `RevisionRequest`), `Fingerprint`, `BuildCache` |
+| `Johannes.Core` | `Typography`, `WordXml`, `Stages`, `ExitCodes`, `BookLayout`, `ExecutableLocator`, `Preflight`, `StagePlan`/`StagePlanner`, `Pipeline` (avec `IStage`, `PipelineContext`, `StageOutcome`, `RevisionRequest`), `Fingerprint`, `BuildCache`, `Settings`/`ConfigKeys`/`Configuration`/`ConfigFile` |
 | `Johannes.Scrubx` | validateur typographique repris de scrubx (`DocxValidator`, `RuleCatalog`, `DocxRevisionWriter`, `DocxComments`, `DocxPackage`, `ParagraphTextMap`) |
 | `Johannes.Paige` | moteur EPUB repris de paige (`Lexer`, `Parser`, `Est`, `Epub`, `Token`), sans CLI |
-| `Johannes` | exécutable : `Program.cs` (options, assemblage), `CheckStage`, `PipelineStages.cs` (`GenerateStage`), `PdfStage`, `EpubStage`, `ProcessRunner` (`IProcessRunner`, simulé dans les tests), `DocumentParser`, `TypstExporter`, `PaigeExporter` |
+| `Johannes` | exécutable : `Program.cs` (options, assemblage), `CheckStage`, `PipelineStages.cs` (`GenerateStage`), `PdfStage`, `EpubStage`, `ProcessRunner` (`IProcessRunner`, simulé dans les tests), `ConfigCommand`, `DocumentParser`, `TypstExporter`, `PaigeExporter` |
 | `Johannes.Tests` | un seul projet de tests ; `Scrubx/` et `Paige/` importés ; `Fixtures/*.paige` |
 
 **Architecture en deux mots**
@@ -62,8 +62,9 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 | D13 | Règles typographiques | Niveau 1 : vocabulaire commun `Typography` dans `Johannes.Core`. Niveau 2 (phase 5, sous conditions) : exporteurs réduits à la conversion `\u00A0` vers `~` / `&#160;`. |
 | D14 | Règles de vérification | Non désactivables : suppression de `-i/--ignore`, `-f/--force` et de `scrubx.json`. Jeu de règles fixe ; seul `VIRGET` reste un avertissement non bloquant. |
 | D15 | `check` et `generate` | `check` est un prérequis de `generate` (rejoué si pas déjà réussi pour l'empreinte du `.docx`) ; plus d'option `--no-check` ni `--skip check`. **Confirmé.** |
+| D16 | Portées de la configuration | Du plus faible au plus fort : défauts, fichier de l'utilisateur, fichier `.johannes` du livre (dossier du `.docx`), options de la ligne de commande. Clés : `paper-directory`, `epub-directory`, `typst-path`. Décidé en session 2 (l'utilisateur avait laissé le choix). |
 
-Conséquence de D3 : `johannes.json` et `--init` sont supprimés de `USER_GUIDE.md` ; la configuration est traitée en phase 9.
+Conséquence de D3 : `johannes.json` et `--init` sont supprimés de `USER_GUIDE.md` ; la configuration est traitée en phase 9 (faite, voir D16).
 
 ## Questions encore ouvertes
 
@@ -166,10 +167,15 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 
 ## Phase 9 — Configuration façon git
 
-- [ ] Sous-commande `johannes config <clé> [<valeur>]` (lecture, écriture, liste, suppression)
-- [ ] Premières clés : `paper-directory`, `epub-directory`, `typst-path`
-- [ ] Portées possibles (dépôt / utilisateur) à décider
-- [ ] Mettre à jour `USER_GUIDE.md` (retirer `--init` et `johannes.json` ou les remplacer)
+Code : `Johannes.Core` (`Settings`, `ConfigKeys`, `Configuration`, `ConfigFile`), `Johannes/ConfigCommand.cs`, branchement dans `Program.cs`, `Preflight` et `BookLayout`.
+
+- [x] Sous-commande `johannes config <clé> [<valeur>]` : lecture (valeur effective, code 1 si inexistante), écriture, `--list` (valeur et origine), `--unset`, `--user`
+- [x] Clés : `paper-directory`, `epub-directory`, `typst-path` ; valeurs validées (dossiers relatifs, sans `..` ; clé inconnue refusée en ligne de commande **et** dans les fichiers)
+- [x] Portées (D16) : défauts, fichier de l'utilisateur (`%APPDATA%\johannes\config` / `~/.config/johannes/config`), fichier `.johannes` du livre, options `--paper-directory`, `--epub-directory`, `--typst-path`. `johannes config` écrit `.johannes` dans le dossier **courant** ; `johannes --docx` le cherche dans le dossier du `.docx`
+- [x] Mettre à jour `USER_GUIDE.md` (§4, §6, §12, statut) et `README.md` ; `johannes.json` et `--init` n'existent plus nulle part
+- [x] Tests (`ConfigurationTests`, `ConfigCommandTests`, ajouts à `PreflightTests`) : 383 tests verts ; essai réel sur une copie d'*Anya* dont `Papier/` est renommé `Print/` (chaîne complète, cache compris)
+- Correctifs au passage : `johannes --help` plantait (option `--docx` requise lue sans parcours d'aide) ; l'ajout d'une sous-commande exigeait une commande, d'où une action racine vide dans `Program.cs`
+- Limite connue : les fichiers écrits à la main (`support-functions.typ`, `Papier/*.typ`) contiennent le chemin `Papier/Assets/…` ; changer `paper-directory` impose de les adapter (signalé dans `USER_GUIDE.md` §6)
 
 ## Phase 10 — Distribution et clôture
 
@@ -185,4 +191,5 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 | Date | Fait | Reste |
 | ---- | ---- | ----- |
 | 2026-10-21 | Phases 0 à 3 (intégration, contrôles préalables, orchestrateur) | Phases 4 à 10 |
-| 2026-10-21 (suite) | Phases 4, 6, 7, 8 et niveau 2 de la phase 5 : `check`, `pdf`, `epub`, cache `.build/`, exporteurs simplifiés ; chaîne complète validée sur *Anya* | Phase 10 (distribution), phase 9 (configuration) |
+| 2026-10-21 (suite) | Phases 4, 6, 7, 8 et niveau 2 de la phase 5 : `check`, `pdf`, `epub`, cache `.build/`, exporteurs simplifiés ; chaîne complète validée sur *Anya* | Phase 10 (distribution) |
+| 2026-10-21 (fin) | Phase 9 : `johannes config`, configuration à quatre niveaux (D16), correctif `--help` | Fin de la phase 10 (fusion, `Makefile` d'*Anya*, dépôts d'origine) |

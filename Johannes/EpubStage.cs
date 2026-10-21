@@ -35,7 +35,7 @@ namespace Johannes
 			// Garanti par les contrôles préalables (D5) ; vérifié ici pour ne pas dépendre de l'appelant.
 			if (layout.EpubDirectory is null || layout.EpubSources.Count != 1)
 			{
-				return StageOutcome.Failure(ExitCodes.PaigeFailed, $"le dossier '{BookLayout.EpubDirectoryName}' doit contenir exactement un fichier .paige.");
+				return StageOutcome.Failure(ExitCodes.PaigeFailed, $"le dossier '{layout.EpubName}' doit contenir exactement un fichier .paige.");
 			}
 
 			var output = OutputOf(context);

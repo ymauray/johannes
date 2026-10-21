@@ -1,6 +1,6 @@
 # Johannes v2 — Guide d'utilisation (proposition)
 
-> **Statut : implémenté sur la branche `version2` (phases 0 à 8 de `ROADMAP.md`).** Ce guide décrit l'usage de johannes v2 ; la sous-commande `johannes config` (§6) reste à venir (phase 9). Il est écrit à partir de la structure du livre *Anya* (`../Anya`, dont le `Makefile`) et de `TOOLCHAIN.md`. Les décisions prises figurent en fin de document (§12) ; le suivi du développement est dans `ROADMAP.md`.
+> **Statut : implémenté sur la branche `version2` (phases 0 à 9 de `ROADMAP.md`).** Ce guide décrit l'usage de johannes v2. Il est écrit à partir de la structure du livre *Anya* (`../Anya`, dont le `Makefile`) et de `TOOLCHAIN.md`. Les décisions prises figurent en fin de document (§12) ; le suivi du développement est dans `ROADMAP.md`.
 
 ## 1. Principe
 
@@ -95,6 +95,7 @@ johannes --docx Anya.docx --rebuild
 | `--revisions[=<fichier>]`, `--author <nom>` | Écrit la copie annotée (voir §5). |
 | `--verbose`, `-v` | Détail des anomalies et des commandes lancées ; signale aussi les étapes non demandées. |
 | `--dry-run` | Affiche le plan (étapes à faire / à sauter et pourquoi) sans rien exécuter. |
+| `--paper-directory`, `--epub-directory`, `--typst-path` | Remplacent la configuration (voir §6). |
 | `--typst`, `--paige`, `--without-typst`, `--without-paige` | Conservées. Restreignent la chaîne à une branche (voir §8). |
 
 ## 5. Vérification typographique : la barrière
@@ -114,16 +115,32 @@ Flux de correction recommandé :
 
 ## 6. Configuration
 
-**Il n'y en a pas, volontairement** : tout repose sur les conventions du §3. Aucun fichier de réglage n'est lu : le jeu de règles typographiques est fixe.
-
-À terme, les réglages seront gérés comme avec git, par une sous-commande :
+**Les conventions du §3 suffisent**, aucun fichier n'est à écrire pour utiliser johannes. La configuration ne sert qu'à s'en écarter, et se gère comme avec git, par une sous-commande :
 
 ```bash
-johannes config paper-directory Papier
-johannes config --list
+johannes config --list                       # toutes les clés, leur valeur effective et leur origine
+johannes config paper-directory              # lit la valeur effective
+johannes config paper-directory Print        # écrit dans .johannes (dossier courant)
+johannes config --user typst-path "C:\outils\typst.exe"   # écrit dans le fichier de l'utilisateur
+johannes config --unset paper-directory      # retire la clé du fichier visé
 ```
 
-Cette sous-commande n'est pas encore définie en détail (voir `ROADMAP.md`, phase 9). Priorité prévue, du plus faible au plus fort : valeurs par défaut, `johannes config`, options de ligne de commande.
+| Clé | Défaut | Effet |
+| --- | ------ | ----- |
+| `paper-directory` | `Papier` | Dossier des reliures Typst, relatif au dossier du `.docx` (chemin relatif, sans `..`). |
+| `epub-directory` | `epub` | Dossier du projet EPUB, relatif au dossier du `.docx`. |
+| `typst-path` | *(recherche dans le `PATH`)* | Chemin complet de `typst`. |
+
+Quatre niveaux, du plus faible au plus fort :
+
+1. les **valeurs par défaut** ci-dessus ;
+2. le **fichier de l'utilisateur** : `%APPDATA%\johannes\config` sous Windows, `~/.config/johannes/config` ailleurs (`--user`) ;
+3. le **fichier du livre** : `.johannes`, dans le dossier du `.docx` (il se commite avec le livre). `johannes config` l'écrit dans le dossier **courant** : lancez-le depuis le dossier du livre ;
+4. les **options de la ligne de commande** : `--paper-directory`, `--epub-directory`, `--typst-path`.
+
+Les fichiers sont de simples lignes `clé = valeur`, les lignes commençant par `#` sont des commentaires. Une clé inconnue ou une valeur invalide, dans un fichier comme en option, arrête johannes avec le code 1 plutôt que d'être ignorée. `johannes config <clé>` seul affiche la valeur effective (code 1 si elle n'existe pas, comme `typst-path` par défaut).
+
+Attention : les fichiers que vous écrivez vous-même (`support-functions.typ`, `Papier/*.typ`) contiennent des chemins ; si vous changez `paper-directory`, adaptez-les (par exemple l'`#import` de `Papier/Assets/common.typ`).
 
 Aucune donnée éditoriale ne sort de ses fichiers actuels : l'ISBN et la liste des relecteurs restent dans `Papier/*.typ` ; le titre, l'identifiant et la langue restent dans `epub/template.paige`.
 
@@ -208,5 +225,6 @@ Les codes 1 à 5 sont ceux de `scrubx`, pour garder la compatibilité avec d'év
 | D13 | Règles typographiques | Vocabulaire commun d'abord ; exporteurs simplifiés ensuite si la sortie reste identique. |
 | D14 | Règles de vérification | Non désactivables : ni `-i`, ni `-f`, ni `scrubx.json`. |
 | D15 | `check` et `generate` | `check` est un prérequis de `generate` (confirmé). |
+| D16 | Portées de la configuration | Défauts, fichier de l'utilisateur, fichier `.johannes` du livre, options de la ligne de commande (du plus faible au plus fort). Clés : `paper-directory`, `epub-directory`, `typst-path`. |
 
 `typst` reste un processus externe : aucun binding .NET connu. Le plan d'implémentation est dans `ROADMAP.md`.

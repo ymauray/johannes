@@ -22,8 +22,31 @@ Option<bool> withoutPaigeOption = new("--without-paige") { Description = "Ne pas
 Option<bool> typstOnlyOption = new("--typst") { Description = "Branche Typst uniquement : vérification, .typ et PDF. Incompatible avec --without-*." };
 Option<bool> paigeOnlyOption = new("--paige") { Description = "Branche Paige uniquement : vérification, .paige et EPUB. Incompatible avec --without-*." };
 
+Option<string?> paperDirectoryOption = new("--paper-directory") { Description = "Dossier des reliures Typst (remplace la configuration, défaut : Papier)." };
+Option<string?> epubDirectoryOption = new("--epub-directory") { Description = "Dossier du projet EPUB (remplace la configuration, défaut : epub)." };
+Option<string?> typstPathOption = new("--typst-path") { Description = "Chemin complet de typst (remplace la configuration et le PATH)." };
+
+Argument<string?> configKeyArgument = new("key") { Description = "Clé de configuration (paper-directory, epub-directory, typst-path).", Arity = ArgumentArity.ZeroOrOne };
+Argument<string?> configValueArgument = new("value") { Description = "Valeur à écrire ; sans valeur, affiche la valeur effective.", Arity = ArgumentArity.ZeroOrOne };
+Option<bool> configListOption = new("--list", "-l") { Description = "Liste toutes les clés avec leur valeur effective et leur origine." };
+Option<bool> configUnsetOption = new("--unset") { Description = "Retire la clé du fichier visé." };
+Option<bool> configUserOption = new("--user") { Description = "Écrit dans le fichier de l'utilisateur plutôt que dans .johannes (dossier courant)." };
+
+var configCommand = new Command("config", "Lit ou écrit la configuration (comme git config). Priorité : défauts, utilisateur, livre (.johannes), ligne de commande.")
+{
+	configKeyArgument,
+	configValueArgument,
+	configListOption,
+	configUnsetOption,
+	configUserOption
+};
+
 var rootCommand = new RootCommand("johannes — vérifie un fichier .docx puis fabrique les versions Typst, PDF, Paige et EPUB du livre.")
 {
+	configCommand,
+	paperDirectoryOption,
+	epubDirectoryOption,
+	typstPathOption,
 	docxOption,
 	onlyOption,
 	untilOption,
@@ -39,7 +62,15 @@ var rootCommand = new RootCommand("johannes — vérifie un fichier .docx puis f
 	paigeOnlyOption
 };
 
+// Sans action, System.CommandLine exige une sous-commande dès qu'il y en a une ; le travail se fait plus bas.
+rootCommand.SetAction(_ => ExitCodes.Success);
+
 ParseResult parseResult = rootCommand.Parse(args);
+
+if (args.Any(a => a is "--help" or "-h" or "-?" or "/?"))
+{
+	return parseResult.Invoke();
+}
 
 if (parseResult.Errors.Count > 0)
 {
@@ -49,6 +80,20 @@ if (parseResult.Errors.Count > 0)
 	}
 
 	return ExitCodes.InvalidArguments;
+}
+
+if (parseResult.CommandResult.Command == configCommand)
+{
+	return ConfigCommand.Run(
+		new ConfigRequest(
+			parseResult.GetValue(configKeyArgument),
+			parseResult.GetValue(configValueArgument),
+			parseResult.GetValue(configListOption),
+			parseResult.GetValue(configUnsetOption),
+			parseResult.GetValue(configUserOption)),
+		new Configuration(Configuration.LocalPathFor(Directory.GetCurrentDirectory()), Configuration.DefaultUserPath()),
+		Console.Out,
+		Console.Error);
 }
 
 if (!TryParseStages(parseResult.GetValue(onlyOption), "--only", out var only)
@@ -88,7 +133,26 @@ var revisions = revisionsRequested
 	? new RevisionRequest(parseResult.GetValue(revisionsOption), parseResult.GetValue(authorOption))
 	: null;
 
-var preflight = Preflight.Run(docxPath, plan.Stages);
+var overrides = new Dictionary<string, string>();
+AddOverride(ConfigKeys.PaperDirectory, parseResult.GetValue(paperDirectoryOption));
+AddOverride(ConfigKeys.EpubDirectory, parseResult.GetValue(epubDirectoryOption));
+AddOverride(ConfigKeys.TypstPath, parseResult.GetValue(typstPathOption));
+
+var configuration = new Configuration(
+	Configuration.LocalPathFor(Path.GetDirectoryName(docxPath)!),
+	Configuration.DefaultUserPath());
+var settings = configuration.Resolve(overrides, out var configErrors);
+if (configErrors.Count > 0)
+{
+	foreach (var configError in configErrors)
+	{
+		Console.Error.WriteLine($"Erreur de configuration : {configError}");
+	}
+
+	return ExitCodes.InvalidArguments;
+}
+
+var preflight = Preflight.Run(docxPath, plan.Stages, settings: settings);
 if (!preflight.Ok)
 {
 	foreach (var issue in preflight.Errors)
@@ -135,6 +199,14 @@ foreach (var note in plan.Notes)
 }
 
 return pipeline.Run(context);
+
+void AddOverride(string key, string? value)
+{
+	if (value is not null)
+	{
+		overrides[key] = value;
+	}
+}
 
 static bool TryParseStages(string? text, string option, out Stages? stages)
 {

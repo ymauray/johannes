@@ -221,4 +221,43 @@ public sealed class PreflightTests : IDisposable
 
 		Assert.Equal(before, Directory.GetFileSystemEntries(_book, "*", SearchOption.AllDirectories).Order().ToArray());
 	}
+
+	[Fact]
+	public void Run_WithConfiguredTypstPath_UsesItInsteadOfThePath()
+	{
+		Touch("Papier", "Livre-broché.typ");
+		var typst = Path.Combine(_root, "outils", "mon-typst");
+		Directory.CreateDirectory(Path.GetDirectoryName(typst)!);
+		File.WriteAllText(typst, string.Empty);
+
+		var report = Preflight.Run(Docx(), Stages.All, PathWithoutTypst(), new Settings(TypstPath: typst));
+
+		Assert.True(report.Ok);
+		Assert.Equal(typst, report.TypstPath);
+	}
+
+	[Fact]
+	public void Run_WithConfiguredTypstPathThatDoesNotExist_ReturnsMissingDependencyEvenIfThePathHasTypst()
+	{
+		Touch("Papier", "Livre-broché.typ");
+
+		var report = Preflight.Run(Docx(), Stages.All, PathWithTypst(), new Settings(TypstPath: Path.Combine(_root, "nulle-part", "typst")));
+
+		Assert.Equal(ExitCodes.MissingDependency, report.ExitCode);
+		Assert.Contains("typst-path", report.Errors[0].Message);
+		Assert.Null(report.TypstPath);
+	}
+
+	[Fact]
+	public void Run_WithConfiguredDirectories_DiscoversTheBookThere()
+	{
+		Touch("Print", "Livre-broché.typ");
+		Touch("ebook", "livre.paige");
+
+		var report = Preflight.Run(Docx(), Stages.All, PathWithTypst(), new Settings("Print", "ebook"));
+
+		Assert.True(report.Ok);
+		Assert.Single(report.Layout!.PaperSources);
+		Assert.Single(report.Layout.EpubSources);
+	}
 }
