@@ -20,7 +20,7 @@
     <ProjectReference Include="..\Johannes.Core\Johannes.Core.csproj" />
     <ProjectReference Include="..\Johannes.Scrubx\Johannes.Scrubx.csproj" />
     <ProjectReference Include="..\Johannes.Paige\Johannes.Paige.csproj" />
-    <PackageReference Include="System.CommandLine" Version="2.0.12" />
+    <PackageReference Include="System.CommandLine" Version="2.0.13" />
   </ItemGroup>
 
   <ItemGroup>
