@@ -139,7 +139,6 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 - [x] Les exporteurs ne dépendent pas du dossier courant : `TypstExporter` déduit le dossier de `support-functions.typ` du chemin reçu
 - [x] Non-régression : sortie identique à la v1 sur `Anya.docx` (vérifié en phase 3)
 - [x] Niveau 2 (D13) : les six regex d'insertion d'espaces sont supprimées (décision de l'utilisateur : l'insécable après `?` et `!` était un reliquat de la v1, les sauts de ligne peuvent changer). Les exporteurs ne font plus que convertir ` ` en `~` (Typst) ou `&#160;` (Paige) ; sur *Anya*, la sortie ne diffère de la v1 que par les 809 espaces suivant `?` ou `!`
-
 - [x] Tests (`TypstExporterTests`, `PaigeExporterTests` : seules les insécables existantes sont converties, les espaces ordinaires restent) : 351 tests verts
 
 ## Phase 6 — Étape `pdf`
