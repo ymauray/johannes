@@ -6,7 +6,7 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 ## Reprise à froid — à lire en premier
 
-**État au 2026-10-21** : phases 0 à 4 et 6 à 8 faites ; la chaîne complète, avec cache, tourne sur *Anya*. Restent : phase 9 (configuration), phase 10 (distribution). Branche `version2` ; la phase 3 est committée (voir `git log`, commit `feat(cli): orchestrateur de la chaîne`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
+**État au 2026-10-21** : phases 0 à 8 faites (y compris le niveau 2 de la phase 5). `johannes --docx X.docx` fait tout : vérification, génération, PDF, EPUB, avec cache incrémental. Restent : **phase 9** (`johannes config`, voulue plus tard par D3) et **phase 10** (distribution et clôture, prochaine étape conseillée). Branche `version2`, tout est committé (voir `git log`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
 
 **Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (351 tests attendus).
 
@@ -14,29 +14,33 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 | Projet | Contenu |
 | ------ | ------- |
-| `Johannes.Core` | `Typography`, `WordXml`, `Stages`, `ExitCodes`, `BookLayout`, `ExecutableLocator`, `Preflight`, `StagePlan`/`StagePlanner`, `Pipeline`/`IStage` |
+| `Johannes.Core` | `Typography`, `WordXml`, `Stages`, `ExitCodes`, `BookLayout`, `ExecutableLocator`, `Preflight`, `StagePlan`/`StagePlanner`, `Pipeline` (avec `IStage`, `PipelineContext`, `StageOutcome`, `RevisionRequest`), `Fingerprint`, `BuildCache` |
 | `Johannes.Scrubx` | validateur typographique repris de scrubx (`DocxValidator`, `RuleCatalog`, `DocxRevisionWriter`, `DocxComments`, `DocxPackage`, `ParagraphTextMap`) |
 | `Johannes.Paige` | moteur EPUB repris de paige (`Lexer`, `Parser`, `Est`, `Epub`, `Token`), sans CLI |
-| `Johannes` | exécutable : `Program.cs` (options, assemblage), `PipelineStages.cs` (`GenerateStage`), `CheckStage`, `PdfStage`, `EpubStage`, `ProcessRunner`, `DocumentParser`, `TypstExporter`, `PaigeExporter` |
+| `Johannes` | exécutable : `Program.cs` (options, assemblage), `CheckStage`, `PipelineStages.cs` (`GenerateStage`), `PdfStage`, `EpubStage`, `ProcessRunner` (`IProcessRunner`, simulé dans les tests), `DocumentParser`, `TypstExporter`, `PaigeExporter` |
 | `Johannes.Tests` | un seul projet de tests ; `Scrubx/` et `Paige/` importés ; `Fixtures/*.paige` |
 
-**Phase 4, points d'entrée**
-- API du validateur : `DocxValidator.Validate(string docxPath, IReadOnlySet<string>? enabledRules = null)` renvoie un `ValidationReport` (`Errors`, `IsValid` ; chaque `ValidationError` a `RuleName`, `IsWarning`, `Context`, `Fix`...). Le paramètre `enabledRules` sert aux règles désactivables : D14 le supprime (toujours `RuleCatalog.AllRuleNames`).
-- Copie annotée : `DocxRevisionWriter.Write(source, destination, report, RevisionOptions?)`, `RevisionResult`, `DocxRevisionException`.
-- À reprendre dans `../scrubx/src/Scrubx.Cli/Program.cs` (dépôt voisin, lecture seule) : `DisplayGroupedIssues`, `DisplayWarnings`, `WriteRevisions`, `DefaultRevisionsPath` (affichage groupé par règle, couleurs, `--revisions`, `--author`). Ne pas reprendre `ArgumentParser`, `RuleConfig`, `TryResolveRuleCodes`, `PrintRules`.
-- Remplacer dans `Johannes/Program.cs` la ligne `new PendingStage(Stages.Check, phase: 4)` par une vraie `CheckStage` (code de sortie `ExitCodes.CheckFailed` = 4) ; `--revisions` et `--author` sont à ajouter aux options.
-- Le contrôle D15 « `check` rejoué avant `generate` seulement si pas déjà réussi » dépend du cache (phase 8) : en phase 4, `check` s'exécute toujours.
+**Architecture en deux mots**
+- `Program.cs` analyse les options, fabrique un `StagePlan`, lance `Preflight`, puis un `Pipeline` de quatre `IStage` (ordre imposé par `Stages`).
+- Chaque étape décide elle-même de son travail : `OmissionReason` (sans objet pour ce livre), `UpToDateReason` (entrées inchangées d'après `BuildCache`), `Run`. Le cache est dans `.build/state.json` à côté du `.docx` ; l'invalidation par version utilise l'identifiant de module des quatre assemblies.
+- Codes de sortie : `ExitCodes` (0 à 9), détaillés dans `USER_GUIDE.md` §10.
+
+**Phase 10, points d'entrée**
+- À mettre à jour : `README.md` (décrit encore la v1 : `--docx` seul, OpenXML, prérequis `paige`), `USER_GUIDE.md` (l'en-tête dit « rien n'est implémenté » ; retirer `--init` et `johannes.json`), `AGENTS.md`, `CONTRIBUTING.md`, `nfpm.yaml`, workflows `dotnet.yml` et `release.yml` (binaires `win-x64`, `linux-x64`, `osx-arm64`).
+- Essai final sur *Anya* : comparer PDF et EPUB à ceux du `Makefile`, puis retirer ou réduire ce `Makefile`.
+- Sort de `../scrubx` et `../paige` : question ouverte plus bas. Fusion dans `main` : par pull request, sur instruction explicite.
 
 **Environnement de test**
-- Livre réel : `C:\Users\MaurayY\perso\Anya` (`Anya.docx`, `Papier/`, `epub/`, `Makefile`). L'utilisateur autorise à s'en servir ; **travailler plutôt sur une copie** dans le dossier temporaire de session, car la génération y réécrit `Anya.typ`, `Anya.paige` et `support-functions.typ`.
-- Référence de non-régression : les `.typ`/`.paige` d'*Anya* produits par la v1 (ceux du dossier `Anya` à la date du 2026-10-21 en sont identiques) ; pour la reconstituer : `git worktree` ou clone de `main`, `dotnet build`, lancer depuis un dossier contenant une copie de `Anya.docx`.
-- `typst` est installé (`C:\Users\MaurayY\.local\bin`). `scrubx` et `paige` existent en exécutables dans le `PATH` de l'utilisateur ; les dépôts `../scrubx` et `../paige` servent de référence en lecture seule.
+- Livre réel : `C:\Users\MaurayY\perso\Anya` (`Anya.docx`, `Papier/`, `epub/`, `Makefile`). L'utilisateur autorise à s'en servir ; **travailler plutôt sur une copie** dans le dossier temporaire de session, car la génération y réécrit `Anya.typ`, `Anya.paige` et `support-functions.typ`. L'`Anya.docx` de ce dossier a été corrigé et passe `check` (seuls 615 avertissements `VIRGET`).
+- Référence de non-régression : les `Anya.typ`/`Anya.paige` du dossier `Anya` sont ceux de la **v1**. La sortie actuelle n'en diffère que par les 809 espaces suivant `?` ou `!` (insécables en v1, ordinaires maintenant, décision actée). Pour comparer : remplacer `?` ou `!` suivi d'une espace par `~` (Typst) ou `&#160;` (Paige) dans la sortie neuve, la différence doit être nulle.
+- Les PDF produits ont été relus à l'œil par l'utilisateur (pages toutes présentes) ; l'EPUB est identique à celui du `paige` installé, à l'horodatage près.
+- `typst` est installé (`C:\Users\MaurayY\.local\bin`). `scrubx` et `paige` existent en exécutables dans le `PATH` de l'utilisateur (le `scrubx` installé est plus ancien que `../scrubx` : il ignore la règle `ESPAPRES`) ; les dépôts `../scrubx` et `../paige` servent de référence en lecture seule.
 - Essai rapide d'un morceau de Core sans exécutable : fichier C# unique `dotnet run essai.cs` avec `#:project <chemin>` en tête.
 
 **Pièges rencontrés**
 - `.gitignore` contient `*.paige` : il ignore aussi un dossier nommé `Johannes.Paige` (Windows ne distingue pas la casse). Exceptions en fin de fichier ; vérifier avec `git ls-files` après tout nouveau projet ou dossier.
-- Le fichier `.editorconfig` impose tabulations et CRLF pour le C# : après création de fichiers, lancer `dotnet format whitespace johannes.sln --include <fichiers ou dossiers>`. Ne pas le lancer sur toute la solution sans `--include` (il reformate des fichiers existants).
-- Outils : un `cat <<'EOF'` contenant des apostrophes françaises échoue parfois dans le shell ; utiliser l'outil d'écriture de fichiers. Dans un script Python passé en ligne, les séquences backslash-u sont interprétées : écrire `chr(92) + 'u00A0'` ou passer par un fichier. Les `.md` du dépôt sont en CRLF dans la copie de travail : lire/écrire avec `newline=''`.
+- Le fichier `.editorconfig` impose tabulations et CRLF pour le C# : après création de fichiers, lancer `dotnet format whitespace johannes.sln --include <fichiers ou dossiers>`. Ne pas le lancer sur toute la solution sans `--include` (il reformate des fichiers existants). Git signale « LF will be replaced by CRLF » : sans gravité (l'index est normalisé en LF).
+- Outils : pas de Python dans le shell. Un `cat <<'EOF'` ou un `sed` contenant des apostrophes françaises ou des barres obliques inverses est déformé (par exemple `'\\'` devient `'\'`, `\u00A0` devient `00A0`) : utiliser l'outil d'écriture de fichiers pour tout fichier C# ou Markdown non trivial, puis `head`/`tail` pour assembler si besoin. L'outil d'édition interprète `\u00A0` en vrai caractère dans le texte Markdown : écrire « U+00A0 ».
 - La console Windows via git-bash affiche mal les accents sans `Console.OutputEncoding = UTF8` (déjà fait dans `Program.cs`).
 - Règle de commit : ne jamais committer sans demande ; messages Conventional Commits en français, avec la ligne `Co-Authored-By` demandée par la session.
 
@@ -180,3 +184,5 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 
 | Date | Fait | Reste |
 | ---- | ---- | ----- |
+| 2026-10-21 | Phases 0 à 3 (intégration, contrôles préalables, orchestrateur) | Phases 4 à 10 |
+| 2026-10-21 (suite) | Phases 4, 6, 7, 8 et niveau 2 de la phase 5 : `check`, `pdf`, `epub`, cache `.build/`, exporteurs simplifiés ; chaîne complète validée sur *Anya* | Phase 10 (distribution), phase 9 (configuration) |
