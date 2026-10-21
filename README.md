@@ -19,7 +19,7 @@ Le nom du projet est un hommage à Johannes Gutenberg, l'inventeur de l'imprimer
   - Autres styles -> Appel à une fonction `#style_<StyleId>()` (Typst) ou paragraphe de classe `style_<StyleId>` (Paige).
 - **Formatage** : Support de l'italique (`<em>` / `_..._`), du gras (`<strong>` / `*...*`) et fusion automatique des segments de texte consécutifs de même formatage.
 - **Polices de caractères** : Prise en charge des changements de police (`RunFonts`) via une fonction Typst `#police_<NomDeLaPolice>()` et une balise Paige `<span class="police_<NomDeLaPolice>">`.
-- **Typographie française** : Gestion automatique des espaces insécables avant la ponctuation double (`?`, `!`, `:`, `;`).
+- **Typographie française** : les espaces insécables du document (avant la ponctuation double, autour des guillemets) sont conservées à l'export ; leur présence est garantie par l'étape de vérification.
 - **Nettoyage** : Conversion des tirets cadratins et espaces insécables Word vers la syntaxe appropriée pour chaque format.
 
 ## Prérequis

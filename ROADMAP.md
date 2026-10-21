@@ -6,9 +6,9 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 ## Reprise à froid — à lire en premier
 
-**État au 2026-10-21** : phases 0 à 4 et 6 à 8 faites ; la chaîne complète, avec cache, tourne sur *Anya*. Restent : phase 5 niveau 2 (D13, voir le constat en phase 5), phase 9 (configuration), phase 10 (distribution). Branche `version2` ; la phase 3 est committée (voir `git log`, commit `feat(cli): orchestrateur de la chaîne`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
+**État au 2026-10-21** : phases 0 à 4 et 6 à 8 faites ; la chaîne complète, avec cache, tourne sur *Anya*. Restent : phase 9 (configuration), phase 10 (distribution). Branche `version2` ; la phase 3 est committée (voir `git log`, commit `feat(cli): orchestrateur de la chaîne`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
 
-**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (345 tests attendus).
+**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (351 tests attendus).
 
 **Carte du code**
 
@@ -83,7 +83,7 @@ Structure retenue : `Johannes.Core` (code commun), `Johannes.Scrubx`, `Johannes.
 - [x] Choisir la structure de la solution
 - [x] Créer `Johannes.Core/Typography` (D13, niveau 1) : constantes, espaces, ponctuations doubles
 - [x] Remplacer dans `DocxValidator` les `\u00A0`/`\u202F` écrits en dur (46 occurrences → 1 regex littérale conservée)
-- [ ] Faire consommer `Typography` aux exporteurs : **reporté volontairement à la phase 5**, car leurs regex d'insertion d'espaces (`AbstractExporter`) sont censées disparaître (D13, niveau 2)
+- [x] Faire consommer `Typography` aux exporteurs : sans objet, les regex d'insertion ont disparu (phase 5)
 - [x] Inventorier le code dupliqué : espace de noms `w:` déclaré 5 fois dans scrubx (maintenant `WordXml.W`) ; ouverture du `.docx` (maintenant `WordXml`) ; constantes typographiques (maintenant `Typography`) ; analyse d'arguments et JSON de scrubx (`ArgumentParser`, `RuleConfig`) non importés
 - [x] Porter `DocumentParser` sur `XDocument` via `WordXml` (D12), comportement strict conservé (message : le nom de la propriété ou de l'élément est maintenant le nom XML, ex. `rStyle`, au lieu du nom de classe OpenXml)
 - [x] Réécrire `DocumentParserTests` sans OpenXml (+ cas : désactivation `w:b`, style par défaut, élément étranger homonyme, éléments ignorés)
@@ -138,9 +138,9 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 - [x] Écrire `<nom>.typ`, `<nom>.paige`, `support-functions.typ` à côté du `.docx` (D4) : fait en phase 3 (`GenerateStage` passe le chemin complet aux exporteurs)
 - [x] Les exporteurs ne dépendent pas du dossier courant : `TypstExporter` déduit le dossier de `support-functions.typ` du chemin reçu
 - [x] Non-régression : sortie identique à la v1 sur `Anya.docx` (vérifié en phase 3)
-- [ ] Niveau 2 (D13) : comparer sur *Anya* les `.typ`/`.paige` obtenus avec et sans les regex d'insertion d'espaces (`SpaceBeforeQuestionMarkRegex` et voisines, `ColonRegex`, `SemiColonRegex`) ; si identiques, les supprimer et ne garder que `\u00A0` vers `~` (Typst) / `&#160;` (Paige) ; attention aux cas `12:30`, `https://…`
-- **Constat (essai du 2026-10-21)** : sans les six regex, la sortie *Anya* ne diffère que par 809 espaces **après** `?` ou `!` (espace ordinaire au lieu d'insécable) ; avant `?` `!` `:` `;` et pour `:` `;` rien ne change, ces regex étant redondantes avec `EIPONC`. Les regex «après» font donc plus que convertir : elles rendent insécable l'espace qui suit `?` et `!`. À trancher par l'utilisateur (comportement voulu ou reliquat de la v1) avant de les retirer.
-- [ ] Tests
+- [x] Niveau 2 (D13) : les six regex d'insertion d'espaces sont supprimées (décision de l'utilisateur : l'insécable après `?` et `!` était un reliquat de la v1, les sauts de ligne peuvent changer). Les exporteurs ne font plus que convertir ` ` en `~` (Typst) ou `&#160;` (Paige) ; sur *Anya*, la sortie ne diffère de la v1 que par les 809 espaces suivant `?` ou `!`
+
+- [x] Tests (`TypstExporterTests`, `PaigeExporterTests` : seules les insécables existantes sont converties, les espaces ordinaires restent) : 351 tests verts
 
 ## Phase 6 — Étape `pdf`
 

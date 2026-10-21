@@ -259,15 +259,7 @@ namespace Johannes
 				FlushRun(sb, currentContent, currentItalic.Value, currentBold.Value, currentFont);
 			}
 
-			var data = sb.ToString();
-			data = SpaceBeforeQuestionMarkRegex().Replace(data, "~?");
-			data = SpaceAfterQuestionMarkRegex().Replace(data, "?~");
-			data = SpaceBeforeExclamationMarkRegex().Replace(data, "~!");
-			data = SpaceAfterExclamationMarkRegex().Replace(data, "!~");
-			data = ColonRegex().Replace(data, "~:");
-			data = SemiColonRegex().Replace(data, "~;");
-
-			return data;
+			return sb.ToString();
 		}
 
 		private static void AppendRunContent(System.Text.StringBuilder target, string text)

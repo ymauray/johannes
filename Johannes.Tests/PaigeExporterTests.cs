@@ -6,11 +6,14 @@ namespace Johannes.Tests;
 public class PaigeExporterTests
 {
 	[Theory]
-	[InlineData("Test ?", "Test&#160;?")]
-	[InlineData("Attention !", "Attention&#160;!")]
-	[InlineData("Exemple :", "Exemple&#160;:")]
-	[InlineData("Fin ;", "Fin&#160;;")]
-	public void UnRun_ShouldAddHtmlEntitiesForNonBreakingSpaces(string input, string expected)
+	[InlineData("Test ?", "Test&#160;?")]
+	[InlineData("Attention !", "Attention&#160;!")]
+	[InlineData("Exemple :", "Exemple&#160;:")]
+	[InlineData("Fin ;", "Fin&#160;;")]
+	[InlineData("Vraiment ? Oui", "Vraiment&#160;? Oui")]
+	[InlineData("Test ?", "Test ?")]
+	[InlineData("Alors ! Oui", "Alors ! Oui")]
+	public void UnRun_ShouldOnlyConvertExistingNonBreakingSpacesToEntities(string input, string expected)
 	{
 		// Arrange
 		var runs = new List<ParagraphRun>

@@ -6,11 +6,14 @@ namespace Johannes.Tests;
 public class TypstExporterTests
 {
 	[Theory]
-	[InlineData("Test ?", "Test~?")]
-	[InlineData("Attention !", "Attention~!")]
-	[InlineData("Exemple :", "Exemple~:")]
-	[InlineData("Fin ;", "Fin~;")]
-	public void UnRun_ShouldAddNonBreakingSpacesBeforePunctuation(string input, string expected)
+	[InlineData("Test ?", "Test~?")]
+	[InlineData("Attention !", "Attention~!")]
+	[InlineData("Exemple :", "Exemple~:")]
+	[InlineData("Fin ;", "Fin~;")]
+	[InlineData("Vraiment ? Oui", "Vraiment~? Oui")]
+	[InlineData("Test ?", "Test ?")]
+	[InlineData("Alors ! Oui", "Alors ! Oui")]
+	public void UnRun_ShouldOnlyConvertExistingNonBreakingSpaces(string input, string expected)
 	{
 		// Arrange
 		var runs = new List<ParagraphRun>
