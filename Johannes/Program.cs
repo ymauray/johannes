@@ -111,7 +111,7 @@ var pipeline = new Pipeline(
 [
 	new CheckStage(),
 	new GenerateStage(),
-	new PendingStage(Stages.Pdf, phase: 6, layout => layout.PdfOmissionReason),
+	new PdfStage(),
 	new PendingStage(Stages.Epub, phase: 7, layout => layout.EpubOmissionReason),
 ]);
 
