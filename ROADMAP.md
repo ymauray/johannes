@@ -6,9 +6,9 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 ## Reprise à froid — à lire en premier
 
-**État au 2026-10-21** : phases 0 à 4, 6 et 7 faites (sauf le cache de `check`, phase 8) ; la chaîne complète tourne sur *Anya*. Prochaine étape = **phase 8** (cache) ; la phase 5 niveau 2 (D13) reste à faire. Branche `version2` ; la phase 3 est committée (voir `git log`, commit `feat(cli): orchestrateur de la chaîne`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
+**État au 2026-10-21** : phases 0 à 4 et 6 à 8 faites ; la chaîne complète, avec cache, tourne sur *Anya*. Restent : phase 5 niveau 2 (D13, voir le constat en phase 5), phase 9 (configuration), phase 10 (distribution). Branche `version2` ; la phase 3 est committée (voir `git log`, commit `feat(cli): orchestrateur de la chaîne`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
 
-**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (316 tests attendus).
+**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (345 tests attendus).
 
 **Carte du code**
 
@@ -128,7 +128,7 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 - [x] Appeler `DocxValidator` en processus, afficher le rapport (`-v`, avertissements)
 - [x] Bloquer si erreurs (D2), continuer si seulement des avertissements
 - [x] Supprimer de l'import le mécanisme de règles désactivables (`RuleConfig`, `-i`, `-f`, `--create-config`, `--show-rules` si inutile) : toutes les règles toujours actives (D14)
-- [ ] `check` rejoué avant `generate` si l'empreinte du `.docx` n'a pas déjà un succès en cache (D15)
+- [x] `check` rejoué avant `generate` si l'empreinte du `.docx` n'a pas déjà un succès en cache (D15) (une copie annotée demandée par `--revisions` force toujours la vérification)
 - [x] `--revisions[=fichier]` et `--author` via `DocxRevisionWriter`
 - [x] Tests (`CheckStageTests`, `.docx` en mémoire : valide, erreurs, avertissements seuls, révisions) : 306 tests verts
 - **Constat levé** : sur l'*Anya.docx* de l'époque, `ESPAPRES` signalait 1019 erreurs que le `scrubx` installé (plus ancien) ne voyait pas ; le document n'était réellement pas conforme. `check` fonctionne comme prévu.
@@ -139,6 +139,7 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 - [x] Les exporteurs ne dépendent pas du dossier courant : `TypstExporter` déduit le dossier de `support-functions.typ` du chemin reçu
 - [x] Non-régression : sortie identique à la v1 sur `Anya.docx` (vérifié en phase 3)
 - [ ] Niveau 2 (D13) : comparer sur *Anya* les `.typ`/`.paige` obtenus avec et sans les regex d'insertion d'espaces (`SpaceBeforeQuestionMarkRegex` et voisines, `ColonRegex`, `SemiColonRegex`) ; si identiques, les supprimer et ne garder que `\u00A0` vers `~` (Typst) / `&#160;` (Paige) ; attention aux cas `12:30`, `https://…`
+- **Constat (essai du 2026-10-21)** : sans les six regex, la sortie *Anya* ne diffère que par 809 espaces **après** `?` ou `!` (espace ordinaire au lieu d'insécable) ; avant `?` `!` `:` `;` et pour `:` `;` rien ne change, ces regex étant redondantes avec `EIPONC`. Les regex «après» font donc plus que convertir : elles rendent insécable l'espace qui suit `?` et `!`. À trancher par l'utilisateur (comportement voulu ou reliquat de la v1) avant de les retirer.
 - [ ] Tests
 
 ## Phase 6 — Étape `pdf`
@@ -156,10 +157,10 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 
 ## Phase 8 — Cache incrémental
 
-- [ ] Empreintes SHA-256 par étape et par entrée (tableau du §7 du guide), stockées dans `.build/`
-- [ ] Surveiller `Papier/Assets/**`, `epub/**`, `support-styles.css`, `support-functions.typ`, que le `Makefile` ignore
-- [ ] `--rebuild` ; invalidation à chaque changement de version de johannes
-- [ ] Tests : modifier une entrée ne rejoue que l'étape concernée
+- [x] Empreintes SHA-256 par étape et par entrée (`Fingerprint`, `BuildCache` dans `Johannes.Core`), stockées dans `.build/state.json` (avec un `.gitignore` interne) ; une entrée par unité : `check`, `generate`, `pdf:<reliure>`, `epub`
+- [x] Surveiller `Papier/Assets/**`, `epub/**` (hors l'EPUB produit), `support-styles.css`, `support-functions.typ`, que le `Makefile` ignore ; un résultat supprimé (PDF, EPUB, `.typ`, `.paige`) est refait
+- [x] `--rebuild` ; invalidation à chaque changement de version de johannes (identifiant de module des quatre assemblies)
+- [x] Tests (`FingerprintTests`, `BuildCacheTests`, `CachedStagesTests`) : 345 tests verts ; essai réel sur *Anya* : 2,9 s la première fois, 0,4 s quand rien n'a changé, seuls les PDF après modification de `Papier/Assets`, seul l'EPUB après modification du CSS
 
 ## Phase 9 — Configuration façon git
 

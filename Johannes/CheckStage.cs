@@ -12,8 +12,24 @@ namespace Johannes
 
 		public string? OmissionReason(PipelineContext context) => null;
 
+		/// <summary>Une copie annotée demandée oblige à rejouer la vérification : le rapport en est la matière.</summary>
+		public string? UpToDateReason(PipelineContext context) =>
+			context.Revisions is null && context.Cache?.IsFresh(Unit, FingerprintOf(context)) == true
+				? "déjà réussi pour cette version du document"
+				: null;
+
+		private const string Unit = "check";
+
+		private static string FingerprintOf(PipelineContext context) => Fingerprint.Compute(context.Layout.Directory, [context.DocxPath]);
+
 		public StageOutcome Run(PipelineContext context)
 		{
+			if (UpToDateReason(context) is { } fresh)
+			{
+				context.Out.WriteLine($" - à jour ({fresh})");
+				return StageOutcome.Success;
+			}
+
 			var report = DocxValidator.Validate(context.DocxPath);
 			var errors = report.Errors.Where(e => !e.IsWarning).ToList();
 			var warnings = report.Errors.Where(e => e.IsWarning).ToList();
@@ -40,6 +56,11 @@ namespace Johannes
 			if (errors.Count > 0)
 			{
 				return StageOutcome.Failure(ExitCodes.CheckFailed, $"{errors.Count} erreur(s) de typographie : la chaîne s'arrête avant la génération.");
+			}
+
+			if (revisionsWritten)
+			{
+				context.Cache?.Record(Unit, FingerprintOf(context));
 			}
 
 			return revisionsWritten

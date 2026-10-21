@@ -26,7 +26,8 @@ public sealed record PipelineContext(
 	TextWriter Out,
 	TextWriter Error,
 	string? TypstPath = null,
-	RevisionRequest? Revisions = null);
+	RevisionRequest? Revisions = null,
+	BuildCache? Cache = null);
 
 /// <summary>Une étape de la chaîne.</summary>
 public interface IStage
@@ -35,6 +36,9 @@ public interface IStage
 
 	/// <summary>Raison pour laquelle l'étape est sans objet pour ce livre, ou <c>null</c> si elle s'applique.</summary>
 	string? OmissionReason(PipelineContext context);
+
+	/// <summary>Raison pour laquelle l'étape n'a rien à refaire (entrées inchangées depuis son dernier succès), ou <c>null</c>.</summary>
+	string? UpToDateReason(PipelineContext context) => null;
 
 	StageOutcome Run(PipelineContext context);
 }
@@ -88,6 +92,7 @@ public sealed class Pipeline(IReadOnlyList<IStage> stages)
 			var name = StagePlanner.Name(stage.Id);
 			var status = !context.Plan.Includes(stage.Id) ? "non demandée"
 				: stage.OmissionReason(context) is { } reason ? $"omise ({reason})"
+				: stage.UpToDateReason(context) is { } fresh ? $"à jour ({fresh})"
 				: "à faire";
 			context.Out.WriteLine($"{name,-9} {status}");
 		}

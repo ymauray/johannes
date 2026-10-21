@@ -14,6 +14,7 @@ Option<string?> untilOption = new("--until") { Description = "S'arrête après c
 Option<string?> skipOption = new("--skip") { Description = "Saute ces étapes, séparées par des virgules. check ne peut pas être sauté si generate s'exécute." };
 Option<string?> revisionsOption = new("--revisions") { Description = "Écrit une copie annotée du .docx (révisions suivies) ; --revisions=<fichier> pour choisir le nom.", Arity = ArgumentArity.ZeroOrOne };
 Option<string?> authorOption = new("--author") { Description = "Auteur des révisions de la copie annotée." };
+Option<bool> rebuildOption = new("--rebuild") { Description = "Ignore le cache (.build/) : refait toutes les étapes demandées." };
 Option<bool> dryRunOption = new("--dry-run") { Description = "Affiche les étapes prévues sans rien exécuter." };
 Option<bool> verboseOption = new("--verbose", "-v") { Description = "Affiche aussi les étapes non demandées." };
 Option<bool> withoutTypstOption = new("--without-typst") { Description = "Ne pas exporter au format Typst (ni fabriquer les PDF)." };
@@ -27,6 +28,7 @@ var rootCommand = new RootCommand("johannes — vérifie un fichier .docx puis f
 	onlyOption,
 	untilOption,
 	skipOption,
+	rebuildOption,
 	revisionsOption,
 	authorOption,
 	dryRunOption,
@@ -105,7 +107,11 @@ var context = new PipelineContext(
 	Console.Out,
 	Console.Error,
 	preflight.TypstPath,
-	revisions);
+	revisions,
+	new BuildCache(
+		preflight.Layout!.Directory,
+		BuildCache.VersionOf(typeof(DocumentParser).Assembly, typeof(BuildCache).Assembly, typeof(Johannes.Scrubx.DocxValidator).Assembly, typeof(Johannes.Paige.Epub).Assembly),
+		parseResult.GetValue(rebuildOption)));
 
 var pipeline = new Pipeline(
 [
