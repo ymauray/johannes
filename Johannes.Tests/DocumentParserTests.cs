@@ -1,16 +1,27 @@
-using DocumentFormat.OpenXml.Wordprocessing;
+using System.Xml.Linq;
 using Xunit;
-using Johannes;
 
 namespace Johannes.Tests;
 
 public class DocumentParserTests
 {
+	private static readonly XNamespace W = WordXml.W;
+
 	private class FakeExporter : IExporter
 	{
-		public void Paragraph(string styleId, List<ParagraphRun> runs) {}
-		public void FinishExport() {}
+		public void Paragraph(string styleId, List<ParagraphRun> runs) { }
+		public void FinishExport() { }
 	}
+
+	private static XElement Paragraph(string style, params XElement[] runs) =>
+		new(W + "p",
+			new XElement(W + "pPr", new XElement(W + "pStyle", new XAttribute(W + "val", style))),
+			runs);
+
+	private static XElement Run(string text, params XElement[] properties) =>
+		new(W + "r",
+			properties.Length > 0 ? new XElement(W + "rPr", properties) : null,
+			new XElement(W + "t", text));
 
 	[Fact]
 	public void ParseParagraph_WithUnsupportedRunProperty_ShouldThrowInvalidOperationExceptionWithContext()
@@ -19,21 +30,16 @@ public class DocumentParserTests
 		var exporter = new FakeExporter();
 		var parser = new DocumentParser(exporter);
 
-		// Crée un paragraphe avec style "MonStyle" et du texte
-		var paragraph = new Paragraph(
-			new ParagraphProperties(new ParagraphStyleId { Val = "MonStyle" }),
-			new Run(
-				new RunProperties(new RunStyle { Val = "SomeStyle" }), // RunStyle n'est pas supporté par ParseRun
-				new Text("Texte problématique")
-			)
-		);
+		// RunStyle n'est pas supporté par ParseRun
+		var paragraph = Paragraph("MonStyle",
+			Run("Texte problématique", new XElement(W + "rStyle", new XAttribute(W + "val", "SomeStyle"))));
 
 		// Act & Assert
 		var exception = Assert.Throws<InvalidOperationException>(() => parser.ParseParagraph(paragraph));
 		Assert.Contains("Erreur lors de l'analyse du paragraphe", exception.Message);
 		Assert.Contains("style: 'MonStyle'", exception.Message);
 		Assert.Contains("texte brut: \"Texte problématique\"", exception.Message);
-		Assert.Contains("Unsupported run property: RunStyle", exception.Message);
+		Assert.Contains("Unsupported run property: rStyle", exception.Message);
 	}
 
 	[Fact]
@@ -49,17 +55,9 @@ public class DocumentParserTests
 		});
 		var parser = new DocumentParser(exporter);
 
-		var paragraph = new Paragraph(
-			new ParagraphProperties(new ParagraphStyleId { Val = "Normal" }),
-			new Run(
-				new RunProperties(new Bold(), new BoldComplexScript()),
-				new Text("Gras")
-			),
-			new Run(
-				new RunProperties(new Italic(), new ItalicComplexScript()),
-				new Text("Italique")
-			)
-		);
+		var paragraph = Paragraph("Normal",
+			Run("Gras", new XElement(W + "b"), new XElement(W + "bCs")),
+			Run("Italique", new XElement(W + "i"), new XElement(W + "iCs")));
 
 		// Act
 		parser.ParseParagraph(paragraph);
@@ -76,6 +74,22 @@ public class DocumentParserTests
 		Assert.True(capturedRuns[1].isItalic);
 	}
 
+	[Theory]
+	[InlineData("0")]
+	[InlineData("false")]
+	[InlineData("off")]
+	public void ParseParagraph_WithDisabledBold_ShouldNotBeBold(string value)
+	{
+		List<ParagraphRun>? capturedRuns = null;
+		var parser = new DocumentParser(new FakeExporterWithCapture((_, runs) => capturedRuns = runs));
+
+		parser.ParseParagraph(Paragraph("Normal",
+			Run("Texte", new XElement(W + "b", new XAttribute(W + "val", value)))));
+
+		Assert.NotNull(capturedRuns);
+		Assert.False(capturedRuns[0].isBold);
+	}
+
 	[Fact]
 	public void ParseParagraph_WithRunFonts_ShouldParseFontPropertyCorrectly()
 	{
@@ -89,13 +103,10 @@ public class DocumentParserTests
 		});
 		var parser = new DocumentParser(exporter);
 
-		var paragraph = new Paragraph(
-			new ParagraphProperties(new ParagraphStyleId { Val = "Normal" }),
-			new Run(
-				new RunProperties(new RunFonts { Ascii = "Amazon Endure Book", HighAnsi = "Amazon Endure Book" }),
-				new Text("Texte avec police")
-			)
-		);
+		var paragraph = Paragraph("Normal",
+			Run("Texte avec police", new XElement(W + "rFonts",
+				new XAttribute(W + "ascii", "Amazon Endure Book"),
+				new XAttribute(W + "hAnsi", "Amazon Endure Book"))));
 
 		// Act
 		parser.ParseParagraph(paragraph);
@@ -108,9 +119,47 @@ public class DocumentParserTests
 		Assert.Equal("Amazon Endure Book", capturedRuns[0].font);
 	}
 
+	[Fact]
+	public void ParseParagraph_WithoutStyle_ShouldDefaultToNormal()
+	{
+		string? capturedStyle = null;
+		var parser = new DocumentParser(new FakeExporterWithCapture((style, _) => capturedStyle = style));
+
+		parser.ParseParagraph(new XElement(W + "p", Run("Texte")));
+
+		Assert.Equal("Normal", capturedStyle);
+	}
+
+	[Fact]
+	public void ParseParagraph_WithForeignElementNamedLikeWordOne_ShouldBeRejected()
+	{
+		var parser = new DocumentParser(new FakeExporter());
+		XNamespace other = "urn:autre";
+		var paragraph = new XElement(W + "p", new XElement(other + "r"));
+
+		var exception = Assert.Throws<InvalidOperationException>(() => parser.ParseParagraph(paragraph));
+		Assert.Contains("Unsupported inline element", exception.Message);
+	}
+
+	[Fact]
+	public void ParseParagraph_WithIgnoredElements_ShouldSkipThem()
+	{
+		List<ParagraphRun>? capturedRuns = null;
+		var parser = new DocumentParser(new FakeExporterWithCapture((_, runs) => capturedRuns = runs));
+
+		parser.ParseParagraph(new XElement(W + "p",
+			new XElement(W + "bookmarkStart"),
+			new XElement(W + "proofErr"),
+			Run("Texte"),
+			new XElement(W + "bookmarkEnd")));
+
+		Assert.NotNull(capturedRuns);
+		Assert.Single(capturedRuns);
+	}
+
 	private class FakeExporterWithCapture(Action<string, List<ParagraphRun>> onParagraph) : IExporter
 	{
 		public void Paragraph(string styleId, List<ParagraphRun> runs) => onParagraph(styleId, runs);
-		public void FinishExport() {}
+		public void FinishExport() { }
 	}
 }

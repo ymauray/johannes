@@ -20,6 +20,15 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Johannes\johannes.csproj" />
+    <ProjectReference Include="..\Johannes.Core\Johannes.Core.csproj" />
+    <ProjectReference Include="..\Johannes.Scrubx\Johannes.Scrubx.csproj" />
+    <ProjectReference Include="..\Johannes.Paige\Johannes.Paige.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Fixtures\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>

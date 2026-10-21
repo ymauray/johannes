@@ -1,11 +1,9 @@
-using DocumentFormat.OpenXml.Packaging;
-using DocumentFormat.OpenXml.Wordprocessing;
-using System.Text;
-using W = DocumentFormat.OpenXml.Wordprocessing;
+using System.Xml.Linq;
 
 namespace Johannes
 {
-	public record ParagraphRun {
+	public record ParagraphRun
+	{
 		public required string content;
 		public bool isItalic { get; init; } = false;
 		public bool isBold { get; init; } = false;
@@ -14,6 +12,8 @@ namespace Johannes
 
 	public class DocumentParser(string docxFilePath)
 	{
+		private static readonly XNamespace W = WordXml.W;
+
 		private IExporter? _exporter;
 
 		internal DocumentParser(IExporter exporter) : this("")
@@ -24,67 +24,66 @@ namespace Johannes
 		public void ParseAndExport(IExporter exporter)
 		{
 			_exporter = exporter;
-			using var doc = WordprocessingDocument.Open(docxFilePath, false);
-			var mainPart = doc.MainDocumentPart ?? throw new InvalidOperationException("Document has no main part.");
-			var wDoc = mainPart.Document ?? throw new InvalidOperationException("Document has no document element.");
-			var body = wDoc.Body ?? throw new InvalidOperationException("Document has no body.");
+			var wDoc = WordXml.LoadMainDocument(docxFilePath);
+			var root = wDoc.Root ?? throw new InvalidOperationException("Document has no document element.");
+			var body = root.Element(W + "body") ?? throw new InvalidOperationException("Document has no body.");
 
-			foreach (var child in body.ChildElements)
+			foreach (var child in body.Elements())
 			{
-				switch (child)
+				switch (WordXml.Name(child))
 				{
-					case W.Paragraph p:
-						ParseParagraph(p);
+					case "p":
+						ParseParagraph(child);
 						break;
-					case W.SectionProperties:
+					case "sectPr":
 						// Silently ignore section properties here.
 						break;
 					default:
-						throw new NotSupportedException($"Unsupported block-level element: {child.GetType().Name}");
+						throw new NotSupportedException($"Unsupported block-level element: {WordXml.Name(child)}");
 				}
 			}
 
 			_exporter.FinishExport();
 		}
 
-		internal void ParseParagraph(W.Paragraph paragraph)
+		internal void ParseParagraph(XElement paragraph)
 		{
-			var props = paragraph.ParagraphProperties;
+			var props = paragraph.Element(W + "pPr");
 
-			var styleId = props?.ParagraphStyleId?.Val?.ToString() ?? "Normal";
+			var styleId = (string?)props?.Element(W + "pStyle")?.Attribute(W + "val") ?? "Normal";
 
 			List<ParagraphRun> contentBuilder = [];
 
-			foreach (var child in paragraph.ChildElements)
+			foreach (var child in paragraph.Elements())
 			{
 				try
 				{
-					switch (child)
+					switch (WordXml.Name(child))
 					{
-						case W.Run r:
-							var content = ParseRun(r);
+						case "r":
+							var content = ParseRun(child);
 							contentBuilder.Add(content);
 							break;
-						case W.ParagraphProperties:
+						case "pPr":
 							// Silently ignore paragraph properties here.
 							break;
-						case W.BookmarkStart:
+						case "bookmarkStart":
 							// Silently ignore bookmarks here.
 							break;
-						case W.BookmarkEnd:
+						case "bookmarkEnd":
 							// Silently ignore bookmarks here.
 							break;
-						case ProofError:
+						case "proofErr":
 							// Silently ignore proof errors here.
 							break;
 						default:
-							throw new NotSupportedException($"Unsupported inline element: {child.GetType().Name}");
+							throw new NotSupportedException($"Unsupported inline element: {WordXml.Name(child)}");
 					}
 				}
 				catch (Exception ex)
 				{
 					throw new InvalidOperationException(
-						$"Erreur lors de l'analyse du paragraphe (style: '{styleId}', texte brut: \"{paragraph.InnerText}\") : {ex.Message}",
+						$"Erreur lors de l'analyse du paragraphe (style: '{styleId}', texte brut: \"{WordXml.PlainText(paragraph)}\") : {ex.Message}",
 						ex);
 				}
 			}
@@ -92,61 +91,61 @@ namespace Johannes
 			this._exporter!.Paragraph(styleId, contentBuilder);
 		}
 
-		private ParagraphRun ParseRun(W.Run run)
+		private ParagraphRun ParseRun(XElement run)
 		{
 			var content = "";
 			var isItalic = false;
 			var isBold = false;
 			string? font = null;
 
-			foreach (var child in run.ChildElements)
+			foreach (var child in run.Elements())
 			{
-				switch (child)
+				switch (WordXml.Name(child))
 				{
-					case W.Text text:
-						var t = text.InnerText ?? "";
-						content += t;
+					case "t":
+						content += child.Value;
 						break;
-					case W.RunProperties:
-						foreach (var prop in child.ChildElements)
+					case "rPr":
+						foreach (var prop in child.Elements())
 						{
-							switch (prop)
+							switch (WordXml.Name(prop))
 							{
-								case W.Italic i when i.Val is null || i.Val.Value:
-									isItalic = true;
+								case "i":
+									isItalic |= WordXml.IsOn(prop);
 									break;
-								case W.Bold b when b.Val is null || b.Val.Value:
-									isBold = true;
+								case "b":
+									isBold |= WordXml.IsOn(prop);
 									break;
-								case W.RunFonts rf:
-									var fontName = rf.Ascii?.Value ?? rf.HighAnsi?.Value ?? rf.ComplexScript?.Value ?? rf.EastAsia?.Value;
+								case "rFonts":
+									var fontName = (string?)prop.Attribute(W + "ascii")
+										?? (string?)prop.Attribute(W + "hAnsi")
+										?? (string?)prop.Attribute(W + "cs")
+										?? (string?)prop.Attribute(W + "eastAsia");
 									if (!string.IsNullOrWhiteSpace(fontName))
 									{
 										font = fontName;
 									}
 									break;
-								case W.Italic:
-								case W.Bold:
-								case W.ItalicComplexScript:
-								case W.BoldComplexScript:
-								case W.Languages:
+								case "iCs":
+								case "bCs":
+								case "lang":
 									// Silently ignore those properties here.
 									break;
 								default:
-									throw new NotSupportedException($"Unsupported run property: {prop.GetType().Name}");
+									throw new NotSupportedException($"Unsupported run property: {WordXml.Name(prop)}");
 							}
 						}
-						// Silently ignore run properties here.
 						break;
-					case W.LastRenderedPageBreak:
+					case "lastRenderedPageBreak":
 						// Silently ignore page breaks here.
 						break;
 					default:
-						throw new NotSupportedException($"Unsupported run-level element: {child.GetType().Name}");
+						throw new NotSupportedException($"Unsupported run-level element: {WordXml.Name(child)}");
 				}
 			}
 
-			return new ParagraphRun() {
+			return new ParagraphRun()
+			{
 				content = content,
 				isItalic = isItalic,
 				isBold = isBold,
