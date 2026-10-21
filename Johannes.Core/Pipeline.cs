@@ -12,6 +12,11 @@ public sealed record StageOutcome(int ExitCode, string? Message = null)
 	public static StageOutcome Failure(int exitCode, string message) => new(exitCode, message);
 }
 
+/// <summary>Demande de copie annotée (<c>--revisions</c>, <c>--author</c>).</summary>
+/// <param name="Path">Fichier de destination, ou <c>null</c> pour le nom par défaut.</param>
+/// <param name="Author">Auteur des révisions, ou <c>null</c> pour la valeur par défaut.</param>
+public sealed record RevisionRequest(string? Path, string? Author);
+
 /// <summary>Ce que les étapes savent du travail en cours.</summary>
 public sealed record PipelineContext(
 	string DocxPath,
@@ -20,7 +25,8 @@ public sealed record PipelineContext(
 	bool Verbose,
 	TextWriter Out,
 	TextWriter Error,
-	string? TypstPath = null);
+	string? TypstPath = null,
+	RevisionRequest? Revisions = null);
 
 /// <summary>Une étape de la chaîne.</summary>
 public interface IStage

@@ -12,6 +12,8 @@ Option<FileInfo?> docxOption = new("--docx", "-d")
 Option<string?> onlyOption = new("--only") { Description = "N'exécute que ces étapes (check, generate, pdf, epub), séparées par des virgules." };
 Option<string?> untilOption = new("--until") { Description = "S'arrête après cette étape (check, generate, pdf ou epub)." };
 Option<string?> skipOption = new("--skip") { Description = "Saute ces étapes, séparées par des virgules. check ne peut pas être sauté si generate s'exécute." };
+Option<string?> revisionsOption = new("--revisions") { Description = "Écrit une copie annotée du .docx (révisions suivies) ; --revisions=<fichier> pour choisir le nom.", Arity = ArgumentArity.ZeroOrOne };
+Option<string?> authorOption = new("--author") { Description = "Auteur des révisions de la copie annotée." };
 Option<bool> dryRunOption = new("--dry-run") { Description = "Affiche les étapes prévues sans rien exécuter." };
 Option<bool> verboseOption = new("--verbose", "-v") { Description = "Affiche aussi les étapes non demandées." };
 Option<bool> withoutTypstOption = new("--without-typst") { Description = "Ne pas exporter au format Typst (ni fabriquer les PDF)." };
@@ -25,6 +27,8 @@ var rootCommand = new RootCommand("johannes — vérifie un fichier .docx puis f
 	onlyOption,
 	untilOption,
 	skipOption,
+	revisionsOption,
+	authorOption,
 	dryRunOption,
 	verboseOption,
 	withoutTypstOption,
@@ -71,6 +75,17 @@ if (plan is null)
 
 var docxPath = parseResult.GetValue(docxOption)!.FullName;
 
+var revisionsRequested = parseResult.GetResult(revisionsOption) is not null;
+if (revisionsRequested && !plan.Includes(Stages.Check))
+{
+	Console.Error.WriteLine("Erreur : --revisions exige l'étape check.");
+	return ExitCodes.InvalidArguments;
+}
+
+var revisions = revisionsRequested
+	? new RevisionRequest(parseResult.GetValue(revisionsOption), parseResult.GetValue(authorOption))
+	: null;
+
 var preflight = Preflight.Run(docxPath, plan.Stages);
 if (!preflight.Ok)
 {
@@ -89,11 +104,12 @@ var context = new PipelineContext(
 	parseResult.GetValue(verboseOption),
 	Console.Out,
 	Console.Error,
-	preflight.TypstPath);
+	preflight.TypstPath,
+	revisions);
 
 var pipeline = new Pipeline(
 [
-	new PendingStage(Stages.Check, phase: 4),
+	new CheckStage(),
 	new GenerateStage(),
 	new PendingStage(Stages.Pdf, phase: 6, layout => layout.PdfOmissionReason),
 	new PendingStage(Stages.Epub, phase: 7, layout => layout.EpubOmissionReason),
