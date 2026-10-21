@@ -6,7 +6,7 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 ## Reprise à froid — à lire en premier
 
-**État au 2026-10-21** : phases 0 à 9 faites, phase 10 en grande partie (y compris le niveau 2 de la phase 5). `johannes --docx X.docx` fait tout : vérification, génération, PDF, EPUB, avec cache incrémental. Reste seulement la fusion dans `main` (phase 10), sur instruction explicite de l'utilisateur. Branche `version2`, tout est committé (voir `git log`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
+**État au 2026-10-21** : phases 0 à 9 faites, phase 10 faite sauf la fusion (y compris le niveau 2 de la phase 5). `johannes --docx X.docx` fait tout : vérification, génération, PDF, EPUB, avec cache incrémental. **En cours : l'utilisateur valide johannes sur des livres réels, en restant sur `version2` (branche poussée sur `origin`).** Les anomalies qu'il remonte se corrigent sur cette branche, avec test. Reste ensuite la fusion dans `main` par pull request, sur instruction explicite. Tout est committé (voir `git log`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
 
 **Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (383 tests attendus).
 
