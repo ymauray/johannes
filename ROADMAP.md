@@ -6,7 +6,7 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 ## Reprise à froid — à lire en premier
 
-**État au 2026-10-21** : phases 0 à 8 faites (y compris le niveau 2 de la phase 5). `johannes --docx X.docx` fait tout : vérification, génération, PDF, EPUB, avec cache incrémental. Restent : **phase 9** (`johannes config`, voulue plus tard par D3) et **phase 10** (distribution et clôture, prochaine étape conseillée). Branche `version2`, tout est committé (voir `git log`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
+**État au 2026-10-21** : phases 0 à 8 faites, phase 10 en grande partie (y compris le niveau 2 de la phase 5). `johannes --docx X.docx` fait tout : vérification, génération, PDF, EPUB, avec cache incrémental. Restent : **phase 9** (`johannes config`, voulue plus tard par D3) et la fin de la **phase 10** (voir ci-dessous : tout ce qui reste dépend de l'utilisateur). Branche `version2`, tout est committé (voir `git log`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
 
 **Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (351 tests attendus).
 
@@ -26,9 +26,8 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 - Codes de sortie : `ExitCodes` (0 à 9), détaillés dans `USER_GUIDE.md` §10.
 
 **Phase 10, points d'entrée**
-- À mettre à jour : `README.md` (décrit encore la v1 : `--docx` seul, OpenXML, prérequis `paige`), `USER_GUIDE.md` (l'en-tête dit « rien n'est implémenté » ; retirer `--init` et `johannes.json`), `AGENTS.md`, `CONTRIBUTING.md`, `nfpm.yaml`, workflows `dotnet.yml` et `release.yml` (binaires `win-x64`, `linux-x64`, `osx-arm64`).
-- Essai final sur *Anya* : comparer PDF et EPUB à ceux du `Makefile`, puis retirer ou réduire ce `Makefile`.
-- Sort de `../scrubx` et `../paige` : question ouverte plus bas. Fusion dans `main` : par pull request, sur instruction explicite.
+- Fait : `README.md`, `USER_GUIDE.md` (statut), `nfpm.yaml`, essai de publication autonome ; workflows et `CONTRIBUTING.md` n'ont rien exigé.
+- Reste à l'utilisateur ou sur son ordre : `AGENTS.md` §6 à retirer à la fusion, `Makefile` d'*Anya* (autre dépôt), sort de `../scrubx` et `../paige` (archivage, paquets Homebrew et Scoop), fusion dans `main`.
 
 **Environnement de test**
 - Livre réel : `C:\Users\MaurayY\perso\Anya` (`Anya.docx`, `Papier/`, `epub/`, `Makefile`). L'utilisateur autorise à s'en servir ; **travailler plutôt sur une copie** dans le dossier temporaire de session, car la génération y réécrit `Anya.typ`, `Anya.paige` et `support-functions.typ`. L'`Anya.docx` de ce dossier a été corrigé et passe `check` (seuls 615 avertissements `VIRGET`).
@@ -174,10 +173,11 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 
 ## Phase 10 — Distribution et clôture
 
-- [ ] Mettre à jour `README.md`, `AGENTS.md`, `CONTRIBUTING.md`, `nfpm.yaml`, workflows de release (binaires `win-x64`, `linux-x64`, `osx-arm64`)
-- [ ] Essai réel sur *Anya* : résultats comparés à ceux du `Makefile` (PDF, EPUB)
-- [ ] Retirer ou réduire le `Makefile` d'*Anya*
-- [ ] Sort de `../scrubx` et `../paige` (voir questions ouvertes)
+- [x] Mettre à jour `README.md` (réécrit pour la v2), `USER_GUIDE.md` (statut), `nfpm.yaml` (description). `CONTRIBUTING.md` et les workflows `dotnet.yml` / `release.yml` n'ont rien à changer : ils construisent la solution entière et publient `Johannes/johannes.csproj` en binaire autonome (`win-x64`, `linux-x64`, `osx-arm64`) ; essai local de `dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true` : un seul `johannes.exe` (74 Mo), chaîne complète et cache fonctionnels sur une copie d'*Anya*
+- [ ] `AGENTS.md` : retirer la section 6 (reprise de session du chantier v2) **au moment de la fusion** dans `main`, quand `ROADMAP.md` n'a plus lieu d'être
+- [x] Essai réel sur *Anya* : chaîne complète sur une copie, 3 PDF et EPUB ; PDF relus à l'œil par l'utilisateur, EPUB identique à celui de `paige`
+- [ ] Retirer ou réduire le `Makefile` d'*Anya* : c'est un autre dépôt, à faire par l'utilisateur (il se réduit à `johannes --docx Anya.docx`)
+- [ ] Sort de `../scrubx` et `../paige` (voir questions ouvertes) ; les paquets Homebrew (`ymauray/homebrew-tap`) et Scoop de `paige` sont à retirer ou rediriger
 - [ ] Fusion de `version2` dans `main` par pull request, sur instruction explicite
 
 ## Journal de session

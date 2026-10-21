@@ -1,6 +1,6 @@
 # Johannes v2 — Guide d'utilisation (proposition)
 
-> **Statut : conception arrêtée, rien n'est implémenté.** Ce guide décrit l'usage visé pour la v2. Il est écrit à partir de la structure actuelle du livre *Anya* (`../Anya`, dont le `Makefile`) et de `TOOLCHAIN.md`. Les décisions prises figurent en fin de document (§12) ; le suivi du développement est dans `ROADMAP.md`.
+> **Statut : implémenté sur la branche `version2` (phases 0 à 8 de `ROADMAP.md`).** Ce guide décrit l'usage de johannes v2 ; la sous-commande `johannes config` (§6) reste à venir (phase 9). Il est écrit à partir de la structure du livre *Anya* (`../Anya`, dont le `Makefile`) et de `TOOLCHAIN.md`. Les décisions prises figurent en fin de document (§12) ; le suivi du développement est dans `ROADMAP.md`.
 
 ## 1. Principe
 
