@@ -488,3 +488,4 @@ Temp/
 *.svg
 *.pdf
 *.paige
+!Johannes.Tests/Fixtures/*.paige

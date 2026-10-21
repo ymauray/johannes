@@ -1,0 +1,10 @@
+#manifest.add(
+    id: "part1-item",
+    href: "part1.xhtml",
+    mediaType: "application/xhtml+xml",
+    nav: "Partie 1",
+)[
+<body>
+    <h1>Contenu de la partie 1</h1>
+</body>
+]
