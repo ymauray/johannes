@@ -112,7 +112,7 @@ var pipeline = new Pipeline(
 	new CheckStage(),
 	new GenerateStage(),
 	new PdfStage(),
-	new PendingStage(Stages.Epub, phase: 7, layout => layout.EpubOmissionReason),
+	new EpubStage(),
 ]);
 
 Console.WriteLine($"Traitement de : {docxPath}");

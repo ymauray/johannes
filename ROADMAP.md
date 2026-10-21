@@ -6,9 +6,9 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 ## Reprise à froid — à lire en premier
 
-**État au 2026-10-21** : phases 0 à 4 et 6 faites (sauf le cache de `check`, phase 8) ; prochaine étape = **phase 7** (`epub`) ; la phase 5 niveau 2 (D13) reste à faire. Branche `version2` ; la phase 3 est committée (voir `git log`, commit `feat(cli): orchestrateur de la chaîne`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
+**État au 2026-10-21** : phases 0 à 4, 6 et 7 faites (sauf le cache de `check`, phase 8) ; la chaîne complète tourne sur *Anya*. Prochaine étape = **phase 8** (cache) ; la phase 5 niveau 2 (D13) reste à faire. Branche `version2` ; la phase 3 est committée (voir `git log`, commit `feat(cli): orchestrateur de la chaîne`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
 
-**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (311 tests attendus).
+**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (316 tests attendus).
 
 **Carte du code**
 
@@ -17,7 +17,7 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 | `Johannes.Core` | `Typography`, `WordXml`, `Stages`, `ExitCodes`, `BookLayout`, `ExecutableLocator`, `Preflight`, `StagePlan`/`StagePlanner`, `Pipeline`/`IStage` |
 | `Johannes.Scrubx` | validateur typographique repris de scrubx (`DocxValidator`, `RuleCatalog`, `DocxRevisionWriter`, `DocxComments`, `DocxPackage`, `ParagraphTextMap`) |
 | `Johannes.Paige` | moteur EPUB repris de paige (`Lexer`, `Parser`, `Est`, `Epub`, `Token`), sans CLI |
-| `Johannes` | exécutable : `Program.cs` (options, assemblage), `PipelineStages.cs` (`GenerateStage` réel, `PendingStage` provisoire), `DocumentParser`, `TypstExporter`, `PaigeExporter` |
+| `Johannes` | exécutable : `Program.cs` (options, assemblage), `PipelineStages.cs` (`GenerateStage`), `CheckStage`, `PdfStage`, `EpubStage`, `ProcessRunner`, `DocumentParser`, `TypstExporter`, `PaigeExporter` |
 | `Johannes.Tests` | un seul projet de tests ; `Scrubx/` et `Paige/` importés ; `Fixtures/*.paige` |
 
 **Phase 4, points d'entrée**
@@ -122,7 +122,6 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 - [x] Dossier de travail = dossier du `.docx` (D4) : la génération écrit à côté du `.docx` quel que soit le dossier courant (vérifié depuis un autre dossier, sortie identique à la v1)
 - [x] Tests de l'enchaînement avec étapes simulées (`PipelineTests`, `StagePlannerTests`) : 298 tests verts
 - [x] Sortie console en UTF-8
-- **Provisoire** : l'étape `epub` est un `PendingStage` qui affiche « pas encore implémentée » et laisse la chaîne continuer ; à remplacer en phase 7. `check` est réelle depuis la phase 4.
 
 ## Phase 4 — Étape `check`
 
@@ -151,9 +150,9 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 
 ## Phase 7 — Étape `epub`
 
-- [ ] Compiler `epub/*.paige` via le moteur intégré, sortie `epub/<nom>.epub` (code 7 en cas d'échec)
-- [ ] Contrôle de la règle « un seul `.paige` » déjà garanti par la phase 2
-- [ ] Test de bout en bout sur un petit livre d'exemple
+- [x] Compiler `epub/*.paige` via le moteur intégré (`EpubStage`), sortie `epub/<nom>.epub` (code 7 en cas d'échec, EPUB tronqué supprimé)
+- [x] Contrôle de la règle « un seul `.paige` » déjà garanti par la phase 2 (revérifié dans l'étape)
+- [x] Tests (`EpubStageTests`, petit livre en dossier temporaire) : 316 tests verts ; essai réel sur une copie d'*Anya* : EPUB identique à celui du `paige` installé, au seul horodatage `dcterms:modified` près
 
 ## Phase 8 — Cache incrémental
 

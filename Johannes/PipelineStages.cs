@@ -35,21 +35,4 @@ namespace Johannes
 			}
 		}
 	}
-
-	/// <summary>
-	/// Étape dont le travail reste à écrire (phases 4, 6 et 7 de la feuille de route) :
-	/// elle le signale et laisse la chaîne continuer.
-	/// </summary>
-	internal sealed class PendingStage(Stages id, int phase, Func<BookLayout, string?>? omissionReason = null) : IStage
-	{
-		public Stages Id => id;
-
-		public string? OmissionReason(PipelineContext context) => omissionReason?.Invoke(context.Layout);
-
-		public StageOutcome Run(PipelineContext context)
-		{
-			context.Out.WriteLine($" ! étape {StagePlanner.Name(id)} pas encore implémentée (phase {phase}) : rien n'a été fait.");
-			return StageOutcome.Success;
-		}
-	}
 }
