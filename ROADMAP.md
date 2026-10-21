@@ -6,7 +6,7 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 ## Reprise à froid — à lire en premier
 
-**État au 2026-10-21** : phases 0 à 9 faites, phase 10 en grande partie (y compris le niveau 2 de la phase 5). `johannes --docx X.docx` fait tout : vérification, génération, PDF, EPUB, avec cache incrémental. Reste la fin de la **phase 10** (voir ci-dessous : tout ce qui reste dépend de l'utilisateur). Branche `version2`, tout est committé (voir `git log`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
+**État au 2026-10-21** : phases 0 à 9 faites, phase 10 en grande partie (y compris le niveau 2 de la phase 5). `johannes --docx X.docx` fait tout : vérification, génération, PDF, EPUB, avec cache incrémental. Reste seulement la fusion dans `main` (phase 10), sur instruction explicite de l'utilisateur. Branche `version2`, tout est committé (voir `git log`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
 
 **Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (383 tests attendus).
 
@@ -27,7 +27,7 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 **Phase 10, points d'entrée**
 - Fait : `README.md`, `USER_GUIDE.md` (statut), `nfpm.yaml`, essai de publication autonome ; workflows et `CONTRIBUTING.md` n'ont rien exigé.
-- Reste à l'utilisateur ou sur son ordre : `AGENTS.md` §6 à retirer à la fusion, `Makefile` d'*Anya* (autre dépôt), sort de `../scrubx` et `../paige` (archivage, paquets Homebrew et Scoop), fusion dans `main`.
+- Tout est fait sauf la fusion de `version2` dans `main` (pull request, sur instruction explicite). `AGENTS.md` §6 a été mis à jour ; le `Makefile` d'*Anya*, `../scrubx` et `../paige` sont hors projet (leur retraite incombe à l'utilisateur).
 
 **Environnement de test**
 - Livre réel : `C:\Users\MaurayY\perso\Anya` (`Anya.docx`, `Papier/`, `epub/`, `Makefile`). L'utilisateur autorise à s'en servir ; **travailler plutôt sur une copie** dans le dossier temporaire de session, car la génération y réécrit `Anya.typ`, `Anya.paige` et `support-functions.typ`. L'`Anya.docx` de ce dossier a été corrigé et passe `check` (seuls 615 avertissements `VIRGET`).
@@ -68,8 +68,8 @@ Conséquence de D3 : `johannes.json` et `--init` sont supprimés de `USER_GUIDE.
 
 ## Questions encore ouvertes
 
-- [ ] **Dossier de travail** : D4 place les sorties à côté du `.docx` ; les `#include` et `--root` de typst, supposent aujourd'hui le dossier courant. **Constaté en phase 1** : la v1 écrit `<nom>.typ`, `<nom>.paige` et `support-functions.typ` dans le dossier **courant** (les exporteurs reçoivent le nom sans répertoire). À corriger en phase 5.
-- [ ] **Dépôts d'origine** (`../scrubx`, `../paige`) : archivage ou redirection après regroupement ; paquets Homebrew et Scoop de `paige`.
+- [x] **Dossier de travail** (résolu en phases 3 et 5 : sorties à côté du `.docx`, `typst` lancé depuis ce dossier avec `--root .`) : D4 place les sorties à côté du `.docx` ; les `#include` et `--root` de typst, supposent aujourd'hui le dossier courant. **Constaté en phase 1** : la v1 écrit `<nom>.typ`, `<nom>.paige` et `support-functions.typ` dans le dossier **courant** (les exporteurs reçoivent le nom sans répertoire). À corriger en phase 5.
+- [x] **Dépôts d'origine** (retraite à la charge de l'utilisateur, hors projet) (`../scrubx`, `../paige`) : archivage ou redirection après regroupement ; paquets Homebrew et Scoop de `paige`.
 
 ## Phase 0 — Cadrage
 
@@ -98,7 +98,7 @@ Structure retenue : `Johannes.Core` (code commun), `Johannes.Scrubx`, `Johannes.
 - [x] Une seule version de `System.CommandLine` (2.0.12, D10) : seule celle de johannes subsiste, `Program.cs` de paige et `ArgumentParser` de scrubx n'étant pas repris
 - [x] Ne pas reprendre `Scrubx.Web`, `Scrubx.Desktop` ni `deploy/`, `publish.*` (D9)
 - [x] `dotnet build` (0 avertissement) et `dotnet test` (243 tests) au vert ; workflow `dotnet.yml` inchangé (il construit la solution entière)
-- [ ] Phase 4 : reprendre l'affichage du rapport de `Scrubx.Cli/Program.cs` (316 lignes) ; `CommandLineTests` de scrubx non importés
+- [x] Phase 4 (faite) : reprendre l'affichage du rapport de `Scrubx.Cli/Program.cs` (316 lignes) ; `CommandLineTests` de scrubx non importés
 
 ## Phase 2 — Contrôles préalables
 
@@ -180,10 +180,10 @@ Code : `Johannes.Core` (`Settings`, `ConfigKeys`, `Configuration`, `ConfigFile`)
 ## Phase 10 — Distribution et clôture
 
 - [x] Mettre à jour `README.md` (réécrit pour la v2), `USER_GUIDE.md` (statut), `nfpm.yaml` (description). `CONTRIBUTING.md` et les workflows `dotnet.yml` / `release.yml` n'ont rien à changer : ils construisent la solution entière et publient `Johannes/johannes.csproj` en binaire autonome (`win-x64`, `linux-x64`, `osx-arm64`) ; essai local de `dotnet publish -r win-x64 --self-contained -p:PublishSingleFile=true` : un seul `johannes.exe` (74 Mo), chaîne complète et cache fonctionnels sur une copie d'*Anya*
-- [ ] `AGENTS.md` : retirer la section 6 (reprise de session du chantier v2) **au moment de la fusion** dans `main`, quand `ROADMAP.md` n'a plus lieu d'être
+- [x] `AGENTS.md` : section 6 mise à jour (et non retirée, décision de l'utilisateur) : repères du projet fini plutôt que consigne de chantier ; `ROADMAP.md` est conservé comme historique
 - [x] Essai réel sur *Anya* : chaîne complète sur une copie, 3 PDF et EPUB ; PDF relus à l'œil par l'utilisateur, EPUB identique à celui de `paige`
-- [ ] Retirer ou réduire le `Makefile` d'*Anya* : c'est un autre dépôt, à faire par l'utilisateur (il se réduit à `johannes --docx Anya.docx`)
-- [ ] Sort de `../scrubx` et `../paige` (voir questions ouvertes) ; les paquets Homebrew (`ymauray/homebrew-tap`) et Scoop de `paige` sont à retirer ou rediriger
+- [x] `Makefile` d'*Anya* : hors projet, considéré comme fait (décision de l'utilisateur) ; il se réduit à `johannes --docx Anya.docx`
+- [x] Sort de `../scrubx` et `../paige` : considéré comme fait ; leur mise à la retraite (archivage, paquets Homebrew et Scoop de `paige`) sera menée par l'utilisateur quand il en aura le temps
 - [ ] Fusion de `version2` dans `main` par pull request, sur instruction explicite
 
 ## Journal de session

@@ -26,6 +26,10 @@ Ce document définit les règles de développement et d'interaction pour le proj
 - **Indentation** : Tabulations pour le C#, espaces pour le Markdown/YAML/Typst/Paige (configuré via `.editorconfig`).
 - **Typographie** : Respect scrupuleux des règles typographiques françaises lors de l'export (espaces insécables, etc.).
 
-## 6. Reprise de session (chantier v2, branche `version2`)
-- Lire d'abord `ROADMAP.md`, section « Reprise à froid » : état d'avancement, carte du code, pièges connus, prochaine étape.
-- Puis `USER_GUIDE.md` (usage visé de `johannes` v2) et `TOOLCHAIN.md` (état des lieux de `scrubx` et `paige` avant regroupement).
+## 6. Reprise de session
+- Lire d'abord `README.md` (la chaîne `check`, `generate`, `pdf`, `epub`, les options, l'architecture) puis `USER_GUIDE.md` (usage détaillé : organisation d'un livre, cache, configuration, codes de sortie).
+- `ROADMAP.md` garde l'historique du chantier v2 : décisions D1 à D16, carte du code, pièges rencontrés, environnement de test (section « Reprise à froid »). `TOOLCHAIN.md` est l'état des lieux de `scrubx` et `paige` avant leur intégration, à titre de mémoire.
+- Structure de la solution : `Johannes.Core` (code commun : typographie, plan des étapes, contrôles préalables, cache, configuration), `Johannes.Scrubx` (vérification typographique), `Johannes.Paige` (moteur EPUB), `Johannes` (exécutable, étapes et exporteurs), `Johannes.Tests` (un seul projet de tests).
+- Après création de fichiers C#, lancer `dotnet format whitespace johannes.sln --include <fichiers ou dossiers>` (tabulations et CRLF imposés par `.editorconfig`) ; ne pas le lancer sur toute la solution sans `--include`.
+- `.gitignore` contient `*.paige` : vérifier avec `git ls-files` que tout nouveau projet ou fixture de ce nom est bien suivi.
+- Tout essai sur un livre réel se fait sur une copie : la génération réécrit `.typ`, `.paige` et `support-functions.typ` à côté du `.docx`.
