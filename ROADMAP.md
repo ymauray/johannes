@@ -6,9 +6,9 @@ Suivi du développement d'une session à l'autre. Branche de travail : `version2
 
 ## Reprise à froid — à lire en premier
 
-**État au 2026-10-21 (fin de session 1)** : phases 0 à 3 faites ; prochaine étape = **phase 4** (étape `check`). Branche `version2` ; la phase 3 est committée (voir `git log`, commit `feat(cli): orchestrateur de la chaîne`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
+**État au 2026-10-21** : phases 0 à 4 faites (sauf le cache de `check`, phase 8) ; prochaine étape = **phase 5, niveau 2** (D13) ou **phase 6** (`pdf`). Branche `version2` ; la phase 3 est committée (voir `git log`, commit `feat(cli): orchestrateur de la chaîne`). L'arbre de travail doit être propre ; sinon, ne committer que sur instruction de l'utilisateur (`AGENTS.md` §2).
 
-**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (298 tests attendus).
+**Vérifier l'état** : `git status`, `dotnet build` (0 avertissement attendu), `dotnet test` (306 tests attendus).
 
 **Carte du code**
 
@@ -122,16 +122,17 @@ Code : `Johannes.Core` (`StagePlanner`, `StagePlan`, `Pipeline`, `IStage`, `Exit
 - [x] Dossier de travail = dossier du `.docx` (D4) : la génération écrit à côté du `.docx` quel que soit le dossier courant (vérifié depuis un autre dossier, sortie identique à la v1)
 - [x] Tests de l'enchaînement avec étapes simulées (`PipelineTests`, `StagePlannerTests`) : 298 tests verts
 - [x] Sortie console en UTF-8
-- **Provisoire** : les étapes `check`, `pdf` et `epub` sont des `PendingStage` qui affichent « pas encore implémentée » et laissent la chaîne continuer. À remplacer aux phases 4, 6 et 7 ; tant que la phase 4 n'est pas faite, la branche **ne vérifie rien** et ne doit pas être publiée.
+- **Provisoire** : les étapes `pdf` et `epub` sont des `PendingStage` qui affichent « pas encore implémentée » et laissent la chaîne continuer ; à remplacer aux phases 6 et 7. `check` est réelle depuis la phase 4.
 
 ## Phase 4 — Étape `check`
 
-- [ ] Appeler `DocxValidator` en processus, afficher le rapport (`-v`, avertissements)
-- [ ] Bloquer si erreurs (D2), continuer si seulement des avertissements
-- [ ] Supprimer de l'import le mécanisme de règles désactivables (`RuleConfig`, `-i`, `-f`, `--create-config`, `--show-rules` si inutile) : toutes les règles toujours actives (D14)
+- [x] Appeler `DocxValidator` en processus, afficher le rapport (`-v`, avertissements)
+- [x] Bloquer si erreurs (D2), continuer si seulement des avertissements
+- [x] Supprimer de l'import le mécanisme de règles désactivables (`RuleConfig`, `-i`, `-f`, `--create-config`, `--show-rules` si inutile) : toutes les règles toujours actives (D14)
 - [ ] `check` rejoué avant `generate` si l'empreinte du `.docx` n'a pas déjà un succès en cache (D15)
-- [ ] `--revisions[=fichier]` et `--author` via `DocxRevisionWriter`
-- [ ] Tests sur `Anya.docx`-like en mémoire (valide, erreurs, avertissements seuls)
+- [x] `--revisions[=fichier]` et `--author` via `DocxRevisionWriter`
+- [x] Tests (`CheckStageTests`, `.docx` en mémoire : valide, erreurs, avertissements seuls, révisions) : 306 tests verts
+- **Constat levé** : sur l'*Anya.docx* de l'époque, `ESPAPRES` signalait 1019 erreurs que le `scrubx` installé (plus ancien) ne voyait pas ; le document n'était réellement pas conforme. `check` fonctionne comme prévu.
 
 ## Phase 5 — Étape `generate`
 
